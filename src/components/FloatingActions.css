@@ -1,0 +1,65 @@
+.floating-actions {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 25;
+  display: flex;
+  gap: 10px;
+  transition: opacity 0.4s var(--easing);
+}
+
+.fa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ink);
+  color: var(--bg);
+  border: 1px solid var(--ink);
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.4s var(--easing);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.fa-btn:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.fa-glyph {
+  font-size: 14px;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.fa-btn kbd {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  background: rgba(255, 255, 255, 0.16);
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.fa-btn:hover kbd {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.16);
+}
+
+@media (max-width: 720px) {
+  .floating-actions {
+    right: 16px;
+    bottom: 16px;
+    flex-direction: column;
+  }
+  .fa-btn { padding: 10px 14px; font-size: 12px; }
+  .fa-btn kbd { display: none; }
+}

@@ -1,0 +1,90 @@
+/* ==========================================================================
+   Cursor custom — bola blanca con mix-blend-mode difference
+   ========================================================================== */
+
+/* Ocultar cursor nativo cuando el custom está activo. Inputs/textareas
+   conservan el cursor de texto para no romper UX de escritura. */
+.has-custom-cursor,
+.has-custom-cursor * {
+  cursor: none !important;
+}
+
+.has-custom-cursor input,
+.has-custom-cursor textarea,
+.has-custom-cursor [contenteditable] {
+  cursor: text !important;
+}
+
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
+  pointer-events: none;
+  z-index: 9999;
+  /* Difference: sobre blanco da negro, sobre dark da casi blanco. */
+  mix-blend-mode: difference;
+  /* Off-screen hasta que llegue el primer mousemove */
+  transform: translate3d(-100px, -100px, 0) translate(-50%, -50%);
+  /* Transiciones para los cambios de estado (hover, press) */
+  transition: width 0.3s var(--easing), height 0.3s var(--easing),
+    opacity 0.3s var(--easing);
+  opacity: 0;
+  will-change: transform;
+}
+
+.cursor.is-visible {
+  opacity: 1;
+}
+
+/* Hover sobre interactivos: bola más grande para invitar al click */
+.cursor.is-hover {
+  width: 56px;
+  height: 56px;
+}
+
+/* Click: feedback de "press" — encoge un instante */
+.cursor.is-pressed {
+  width: 18px;
+  height: 18px;
+}
+.cursor.is-hover.is-pressed {
+  width: 40px;
+  height: 40px;
+}
+
+/* Sobre una .vacio-pill (o mientras hay drag activo en ella) la
+   bola se esconde para que se vea el cursor nativo de grab/grabbing
+   del sistema. Así el usuario percibe que la "bola se convierte en
+   manita" — desaparece y aparece la mano del navegador en su lugar. */
+.cursor.is-grab,
+body.is-grabbing .cursor {
+  opacity: 0;
+}
+
+/* En presentación, fuera. */
+body.is-presenting .cursor {
+  opacity: 0 !important;
+}
+
+/* En touch devices la JS-side ya no monta nada, pero refuerzo desde CSS
+   por si hay algún navegador raro. */
+@media (pointer: coarse) {
+  .cursor {
+    display: none;
+  }
+  .has-custom-cursor,
+  .has-custom-cursor * {
+    cursor: auto !important;
+  }
+}
+
+/* Reduced motion: cursor sin transiciones (sigue funcionando, sin animar) */
+@media (prefers-reduced-motion: reduce) {
+  .cursor {
+    transition: opacity 0.2s linear;
+  }
+}

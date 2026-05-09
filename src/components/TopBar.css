@@ -1,0 +1,210 @@
+/* ==========================================================================
+   TopBar — fiel a Figma 104:502
+   ─ Logo izquierda · pill container con 4 pills a la derecha
+   ─ Pill activa: bg blanco, texto #0b0b0b, px16 py12
+   ─ Pills inactivas: texto blanco, px16 py8
+   ─ Container pill: bg rgba(255,255,255,0.1), p6, rounded 99
+   ========================================================================== */
+
+/* Wrapper fijo que contiene el header. Auto-hide al scroll-down: el wrap
+   se traslada -100% para sacar el navbar entero de pantalla. */
+.navbar-wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  transform: translate3d(0, 0, 0);
+  transition: transform 0.4s var(--easing);
+  will-change: transform;
+}
+
+.navbar-wrap.is-hidden {
+  transform: translate3d(0, -100%, 0);
+}
+
+/* Header — fondo transparente · sin border ni shadow. Padding-x con clamp
+   para mantener alineamiento con el contenido. */
+header.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32px clamp(20px, 2.5vw, 40px) 16px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  transition:
+    background-color 0.4s var(--easing),
+    color 0.4s var(--easing),
+    backdrop-filter 0.4s var(--easing),
+    -webkit-backdrop-filter 0.4s var(--easing);
+}
+
+/* El navbar se mantiene transparente en todo momento — sin fondo, ni blur,
+   ni border, ni shadow. El glass de los pills/iconos ya da contraste. */
+.top-bar.is-scrolled {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* Auto-hide: la barra se desliza fuera de pantalla al scroll-down y
+   reaparece al scroll-up. translateY -100% saca la barra entera + un
+   pequeño extra para que no asome el sombreado. */
+.top-bar.is-hidden {
+  transform: translate3d(0, -110%, 0);
+  pointer-events: none;
+}
+
+/* ---------- Logo (Frame 1 / 104:503) ---------- */
+.tb-logo {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 0;
+  text-decoration: none;
+  transition: opacity 0.3s var(--easing);
+}
+.tb-logo:hover { opacity: 0.7; }
+
+.tb-mark {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -1px;
+  line-height: 1;
+  color: var(--ink);
+  font-feature-settings: 'dlig' 1;
+}
+
+/* ---------- Acciones del lado derecho ---------- */
+/* Container que agrupa el pill-nav + los botones icono (sun, projector).
+   Gap 8px entre el pill-nav y los botones, igual que el Figma 131:72. */
+.tb-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- Nav pill container (Frame 2 / 104:505) ---------- */
+.tb-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px;
+  background: var(--glass-bg);
+  border-radius: 99px;
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+/* ---------- Pills ----------
+   En el nuevo diseño todas las pills son del mismo tamaño (px16 py12).
+   La diferencia entre activa e inactiva es solo el bg/color, no el padding. */
+.tb-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  border-radius: 99px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.3s var(--easing), color 0.3s var(--easing);
+  font-feature-settings: 'dlig' 1;
+}
+
+.tb-pill:hover {
+  background: var(--glass-bg-soft);
+}
+
+/* Pill activa: invierte fg/bg respecto al tema. En dark = bg blanco texto
+   negro; en light = bg negro texto blanco. Mantener contraste fuerte. */
+.tb-pill.is-active {
+  background: var(--ink);
+  color: var(--bg);
+}
+.tb-pill.is-active:hover {
+  background: var(--ink);
+}
+
+/* ---------- Botones icono (sun, projector) ---------- */
+/* Mismo estilo glass que el pill-nav: bg blanco al 10% + border-radius 99
+   para que sean círculos perfectos a 50x50. */
+.tb-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  padding: 6px;
+  border: none;
+  border-radius: 99px;
+  background: var(--glass-bg);
+  color: var(--ink);
+  cursor: pointer;
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  transition: background 0.3s var(--easing), color 0.3s var(--easing),
+    transform 0.3s var(--easing);
+}
+
+.tb-icon-btn:hover {
+  background: var(--glass-bg-strong);
+}
+
+.tb-icon-btn:active {
+  transform: scale(0.94);
+}
+
+.tb-icon-btn[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.tb-icon-btn[aria-disabled='true']:hover {
+  background: var(--glass-bg);
+}
+
+/* ---------- Modo presentación ---------- */
+body.is-presenting .top-bar {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1024px) {
+  .top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-top: 24px;
+    padding-bottom: 12px;
+    gap: 12px;
+    /* Horizontal padding sigue dictado por la regla base (clamp) para
+       mantener el alineamiento con el slider. */
+  }
+  .tb-nav-pill {
+    width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+    scrollbar-width: none;
+  }
+  .tb-nav-pill::-webkit-scrollbar { display: none; }
+}
+
+@media (max-width: 600px) {
+  .top-bar {
+    padding-top: 20px;
+    padding-bottom: 10px;
+  }
+  .tb-mark { font-size: 18px; }
+  .tb-pill { font-size: 12px; padding: 7px 12px; }
+  .tb-pill.is-active { padding: 10px 12px; }
+}

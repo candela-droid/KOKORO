@@ -1,0 +1,11 @@
+node_modules
+dist
+.DS_Store
+.vite
+.env
+.env.local
+*.log
+
+# Archivos temporales que Vite crea al compilar la config
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
