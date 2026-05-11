@@ -37,6 +37,72 @@ export const ejecutivo = {
   closer: 'Apostamos por la trazabilidad total, ingredientes limpios y una promesa clara: alimentos reales para todos los cuerpos. Inclusión, salud y confianza, sin compromisos.',
 };
 
+/* "Sobre Kokoro" — sección con tabs (Figma 104:487 / 151:192).
+   Título grande a dos líneas + 4 tabs (Por qué Kokoro / Misión / Visión /
+   Valores). Cada tab carga su body en formato Mona Sans 28px con frase
+   en Instrument Serif italic intercalada. */
+export const sobreKokoro = {
+  title: ['Sobre', 'Kokoro'],
+  tabs: [
+    {
+      key: 'por-que',
+      label: 'Por qué Kokoro',
+      body: 'En japonés puede llegar a significar corazón, mente, alma, sentimientos. Por lo general el título se traduce como',
+      italic: ' "El corazón de las cosas".',
+    },
+    {
+      key: 'mision',
+      label: 'Misión',
+      body: 'En Kokoro Foods creamos alimentos premium basados en comida real sin ingredientes ultraprocesados, pensados para personas con intolerancias, alergias o estilos de vida conscientes.',
+      italic: ' Diseñamos cada producto con el más alto estándar nutricional, sensorial y estético, para transformar la experiencia de comer en un acto de confianza, placer y bienestar.',
+    },
+    {
+      key: 'vision',
+      label: 'Visión',
+      body: 'Aspiramos a convertirnos en la marca de referencia en alimentación saludable y libre de alérgenos en Europa, elevando el estándar de la industria.',
+      italic: ' Que elegir salud nunca implique resignar placer, diseño ni seguridad.',
+    },
+    {
+      key: 'valores',
+      label: 'Valores',
+      body: 'Honestidad. Inclusión. Excelencia. Confianza.',
+      italic: ' Cuatro principios que guían cada decisión de KOKORO, desde la formulación hasta la experiencia de marca.',
+    },
+  ],
+};
+
+/* "Roadmap" — sección con tabs FASE 1-4 (Figma 104:516 / 151:201).
+   Mismo patrón que SobreKokoro pero aplicado al plan a 3 años. */
+export const roadmap = {
+  title: 'Roadmap',
+  tabs: [
+    {
+      key: 'fase-1',
+      label: 'Fase 1',
+      body: 'Kiosco de specialty coffee de 10–15 m² en Madrid. Validación del modelo, primeras métricas reales y construcción de comunidad.',
+      italic: ' El primer punto físico donde KOKORO se vive por primera vez.',
+    },
+    {
+      key: 'fase-2',
+      label: 'Fase 2',
+      body: 'Operación estable y cash flow positivo. Refinamos procesos, identidad de marca y cultura interna.',
+      italic: ' La fase donde la marca encuentra su voz definitiva.',
+    },
+    {
+      key: 'fase-3',
+      label: 'Fase 3',
+      body: 'Apertura del segundo punto y desarrollo del blend KOKORO propio. Primeras ventas B2B y lanzamiento del ecommerce.',
+      italic: ' El salto de un local a una marca con escala real.',
+    },
+    {
+      key: 'fase-4',
+      label: 'Fase 4',
+      body: 'Tostador propio, línea retail y proveedor B2B consolidado. Marca completa operando de forma autosuficiente y escalable.',
+      italic: ' KOKORO Foods consolidada como referente europeo.',
+    },
+  ],
+};
+
 export const problema = {
   callout: 'Las personas con alergias e intolerancias no tienen acceso a desayunos ricos, nutritivos, seguros y de calidad.',
   bullets: [
@@ -396,7 +462,7 @@ export const referencias = [
 
 export const equipo = {
   intro:
-    'Un equipo pequeño, multidisciplinar y obsesionado con el detalle. Combinamos visión de marca, oficio del producto y disciplina financiera para construir una compañía con criterio desde el primer día.',
+    'Estos somos los que soñamos, diseñamos y ejecutamos Kokoro Foods día a día. Nuestra mayor garantía es nuestro compromiso con este proyecto.',
   // Cada miembro: nombre + cargo (mono uppercase) + photo path.
   // Las fotos se sirven desde /public/team/. Si no existe el archivo, la
   // card muestra el fondo glass con un placeholder de iniciales.

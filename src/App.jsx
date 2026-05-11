@@ -1,11 +1,8 @@
 import { useEffect, useMemo } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import useLenis from './hooks/useLenis.js';
 import useStackScroll from './hooks/useStackScroll.js';
-import usePresentationMode from './hooks/usePresentationMode.js';
 import TopBar from './components/TopBar.jsx';
 import ScrollProgress from './components/ScrollProgress.jsx';
-import PresentationOverlay from './components/PresentationOverlay.jsx';
 import Cursor from './components/Cursor.jsx';
 import { RouterProvider, useRouter } from './router.jsx';
 import HomePage from './pages/HomePage.jsx';
@@ -35,13 +32,15 @@ function NotFound() {
 function AppShell() {
   useLenis();
   useStackScroll();
-  const presentation = usePresentationMode();
   const { path } = useRouter();
 
   const Page = useMemo(() => ROUTES[path] || NotFound, [path]);
 
-  // Smooth scroll a un hash si llega directo (#contacto, #valores...)
+  // Smooth scroll a un hash si llega directo (#contacto, #valores...).
+  // Sólo aplica en first-load con hash; la navegación entre rutas usa el
+  // reset duro del router (window + Lenis + body/documentElement).
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     if (window.location.hash) {
       const el = document.querySelector(window.location.hash);
       if (el) {
@@ -53,32 +52,13 @@ function AppShell() {
   return (
     <>
       <Cursor />
-      <TopBar onPresent={presentation.enter} />
+      <TopBar />
 
       <main>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={path}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <Page />
-          </motion.div>
-        </AnimatePresence>
+        <Page />
       </main>
 
       <ScrollProgress />
-
-      <PresentationOverlay
-        isPresenting={presentation.isPresenting}
-        index={presentation.index}
-        total={presentation.total}
-        onPrev={presentation.prev}
-        onNext={presentation.next}
-        onExit={presentation.exit}
-      />
     </>
   );
 }

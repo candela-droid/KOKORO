@@ -65,11 +65,6 @@ body.is-grabbing .cursor {
   opacity: 0;
 }
 
-/* En presentación, fuera. */
-body.is-presenting .cursor {
-  opacity: 0 !important;
-}
-
 /* En touch devices la JS-side ya no monta nada, pero refuerzo desde CSS
    por si hay algún navegador raro. */
 @media (pointer: coarse) {

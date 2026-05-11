@@ -13,8 +13,6 @@ import { useEffect } from 'react';
  * Progreso (0..1) de "leave" para cada sección = cuánto ha entrado la
  * siguiente sección al viewport. 0 = la siguiente aún está fuera (o tocando
  * el borde inferior); 1 = la siguiente ha alcanzado el top:0.
- *
- * Se desactiva en modo presentación (body.is-presenting).
  */
 export default function useStackScroll() {
   useEffect(() => {
@@ -25,8 +23,6 @@ export default function useStackScroll() {
 
     const update = () => {
       raf = null;
-      if (document.body.classList.contains('is-presenting')) return;
-
       const scrollY = window.scrollY || window.pageYOffset || 0;
       if (scrollY === lastY) return;
       lastY = scrollY;

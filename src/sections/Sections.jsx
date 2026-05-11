@@ -1,12 +1,19 @@
 import {
+  Fragment,
   forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import {
+  motion,
+  useMotionValue,
+  AnimatePresence,
+  useMotionValueEvent,
+} from 'framer-motion';
 import Matter from 'matter-js';
 import {
   brand,
@@ -24,6 +31,8 @@ import {
   referencias,
   contacto,
   negocio,
+  sobreKokoro,
+  roadmap,
 } from '../data/content.js';
 import RevealText from '../components/RevealText.jsx';
 import CountUp from '../components/CountUp.jsx';
@@ -115,39 +124,249 @@ export function KokoroMeaning() {
   );
 }
 
-/* ---------------------- RESUMEN EJECUTIVO (Figma 104:603) -------- */
-/* Patrón: 2 columnas flex-1 items-end gap-64.
-   Izq: eyebrow rect + título Host Grotesk 80px line-height 0.8.
-   Dcha: body Mona Sans 18px con frase clave en Instrument Serif Italic. */
+/* ---------------------- QUÉ ES (Figma 151:215) ----------------------
+   Layout a dos columnas (mismo patrón que MvpIntro): título Host 120px
+   a la izquierda + body 28px a la derecha. Padding 128 / gap 156.
+   Body en dos párrafos Mona Sans con fragmento en Instrument Serif
+   italic intercalado en el primero. */
 export function Resumen() {
   return (
-    <section id="resumen" className="section" data-slide>
-      <div className="kk-row kk-row-end">
-        <motion.div
-          className="kk-col"
-          variants={fade}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-15% 0px' }}
-        >
-          <span className="kk-eyebrow">resumen ejecutivo</span>
-          <RevealText as="h2" className="kk-title">
-            {`Comida real,\ndiseñada para\nincluir a todos.`}
+    <section id="que-es" className="section" data-slide>
+      <div className="intro-dual">
+        <h2 className="intro-dual-title">
+          <RevealText as="span" className="intro-dual-title-line">
+            Qué es
           </RevealText>
-        </motion.div>
+        </h2>
         <motion.div
-          className="kk-col"
+          className="intro-dual-body"
           variants={fade}
           custom={1}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: '-15% 0px' }}
         >
-          <p className="kk-body">
+          <p className="intro-dual-para">
             {ejecutivo.intro}{' '}
-            <span className="kk-body-italic">{ejecutivo.italic}</span>{' '}
-            {ejecutivo.closer}
+            <span className="intro-dual-italic">{ejecutivo.italic}</span>
           </p>
+          <p className="intro-dual-para">{ejecutivo.closer}</p>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------------- TABBED REVEAL ------------------------------
+   Componente compartido por "Sobre Kokoro" (Figma 151:192) y "Roadmap"
+   (Figma 151:201). Layout idéntico — título a dos líneas, fila de tabs,
+   body 28px ancho 672px — y misma mecánica de interacción.
+
+   Detalles importantes de la interacción:
+
+   1. Layout estable. Los cuerpos viven todos en la misma celda de un
+      CSS Grid 1×1 (`.sobre-body-stack`). El contenedor reserva siempre
+      la altura del cuerpo más largo, así que al cambiar de tab el
+      título y las pestañas no se mueven; sólo cambia el texto activo.
+
+   2. Revelado palabra a palabra. El cuerpo se parte en tokens (palabra
+      regular o palabra italic). Cada palabra es un motion.span que
+      entra desde abajo con blur y stagger (~25ms entre palabras) al
+      activarse, y sale hacia arriba con blur (sin stagger) al perder
+      foco. Da una sensación editorial y premium en lugar del fade plano.
+
+   3. Indicador de tab. La pestaña activa lleva un subrayado de 1px que
+      usa `layoutId` de framer-motion: al pulsar otra pestaña, el
+      indicador se desliza con un spring entre posiciones (con cambio
+      automático de ancho — el tab activo es italic serif y mide
+      distinto que los inactivos en sans). */
+
+function TabbedReveal({ id, titleLines, tabs, layoutId, anchor = 'stack' }) {
+  const [active, setActive] = useState(0);
+  const isSplit = anchor === 'split';
+
+  /* Bloque tabs + cuerpos. Se renderiza tal cual en anchor='stack'
+     (Roadmap) o envuelto en .sobre-group cuando anchor='split'
+     (Sobre Kokoro) para que el justify-between del stack empuje el
+     conjunto hacia abajo y deje el título arriba. */
+  const tabsAndBody = (
+    <>
+      <motion.div
+        className="sobre-tabs"
+        role="tablist"
+        variants={fade}
+        custom={1}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: '-15% 0px' }}
+      >
+        {tabs.map((t, i) => (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={i === active}
+            className={`sobre-tab ${i === active ? 'is-active' : ''}`}
+            onClick={() => setActive(i)}
+          >
+            <span className="sobre-tab-label">{t.label}</span>
+            {i === active && (
+              <motion.span
+                layoutId={layoutId}
+                className="sobre-tab-indicator"
+                aria-hidden="true"
+                transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+              />
+            )}
+          </button>
+        ))}
+      </motion.div>
+
+      {/* Stack de cuerpos: todos viven en la misma celda del grid (.sobre-
+          body-stack). El contenedor toma la altura del cuerpo más largo
+          y el resto se mantiene invisible pero ocupando espacio, por lo
+          que el título y las pestañas no se mueven al cambiar de tab. */}
+      <div className="sobre-body-stack">
+        {tabs.map((t, i) => (
+          <SobreBody key={t.key} tab={t} isActive={i === active} />
+        ))}
+      </div>
+    </>
+  );
+
+  return (
+    <section
+      id={id}
+      className={`section section-sobre${isSplit ? ' is-split' : ''}`}
+      data-slide
+    >
+      <div className={`sobre-stack${isSplit ? ' is-split' : ''}`}>
+        {/* Título: cada línea es un RevealText independiente con un pequeño
+            delay creciente para que aparezcan en cascada. RevealText anima
+            cada palabra deslizándose desde abajo (mask vía overflow:hidden
+            en cada palabra), exactamente el mismo lenguaje del resto de
+            títulos del site. */}
+        <h2 className="sobre-title">
+          {titleLines.map((line, i) => (
+            <RevealText
+              key={i}
+              as="span"
+              className="sobre-title-line"
+              delay={i * 0.08}
+            >
+              {line}
+            </RevealText>
+          ))}
+        </h2>
+
+        {isSplit ? <div className="sobre-group">{tabsAndBody}</div> : tabsAndBody}
+      </div>
+    </section>
+  );
+}
+
+/* Body con revelado palabra-a-palabra. Tokeniza el body regular + el
+   tramo italic en arrays de palabras y renderiza cada una como un
+   motion.span con stagger. La salida (cuando isActive pasa a false) es
+   rápida y simétrica (todas las palabras a la vez); la entrada lleva
+   delay i*0.025 para construir la frase de izquierda a derecha. */
+function SobreBody({ tab, isActive }) {
+  const words = useMemo(() => {
+    const split = (str, italic) =>
+      String(str || '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((text) => ({ text, italic }));
+    return [...split(tab.body, false), ...split(tab.italic, true)];
+  }, [tab]);
+
+  return (
+    <p
+      className={`sobre-body ${isActive ? 'is-active' : ''}`}
+      aria-hidden={!isActive}
+    >
+      {words.map((w, i) => (
+        <motion.span
+          key={i}
+          className={`sobre-word${w.italic ? ' is-italic' : ''}`}
+          initial={{ opacity: 0, y: 18, filter: 'blur(10px)' }}
+          animate={
+            isActive
+              ? { opacity: 1, y: 0, filter: 'blur(0px)' }
+              : { opacity: 0, y: -6, filter: 'blur(6px)' }
+          }
+          transition={{
+            duration: isActive ? 0.55 : 0.28,
+            delay: isActive ? i * 0.025 : 0,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
+          {w.text}
+        </motion.span>
+      ))}
+    </p>
+  );
+}
+
+export function SobreKokoro() {
+  return (
+    <TabbedReveal
+      id="sobre-kokoro"
+      titleLines={sobreKokoro.title}
+      tabs={sobreKokoro.tabs}
+      layoutId="sobre-kokoro-indicator"
+      anchor="split"
+    />
+  );
+}
+
+export function Roadmap() {
+  return (
+    <TabbedReveal
+      id="roadmap"
+      titleLines={[roadmap.title]}
+      tabs={roadmap.tabs}
+      layoutId="roadmap-indicator"
+    />
+  );
+}
+
+/* ---------------------- MVP INTRO (Figma 151:212) ----------------
+   Mismo layout que "Qué es": 2 columnas Host 120px (izquierda, en
+   tres líneas Mínimo / Producto / Viable) + body 28px Mona Sans con
+   fragmento en Instrument Serif italic. Reusa las clases compartidas
+   .intro-dual-* para no duplicar CSS. */
+export function MvpIntro() {
+  const titleLines = ['Mínimo', 'Producto', 'Viable'];
+  return (
+    <section id="mvp-intro" className="section" data-slide>
+      <div className="intro-dual">
+        <h2 className="intro-dual-title">
+          {titleLines.map((line, i) => (
+            <RevealText
+              key={i}
+              as="span"
+              className="intro-dual-title-line"
+              delay={i * 0.06}
+            >
+              {line}
+            </RevealText>
+          ))}
+        </h2>
+        <motion.div
+          className="intro-dual-body"
+          variants={fade}
+          custom={1}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-15% 0px' }}
+        >
+          <p className="intro-dual-para">
+            {ejecutivo.intro}{' '}
+            <span className="intro-dual-italic">{ejecutivo.italic}</span>
+          </p>
+          <p className="intro-dual-para">{ejecutivo.closer}</p>
         </motion.div>
       </div>
     </section>
@@ -244,66 +463,189 @@ export function Gap() {
 }
 
 /* ----------------- MVV (Figma 144:13) --------------------------- */
-/* Cilindro 3D real: las 3 caras (mision / vision / valores) viven sobre un
-   tubo único que rota como sólido en el eje X. La opacidad y el blur de
-   cada cara se calculan a partir del ángulo efectivo entre la cara y la
-   cámara (cos del ángulo) — así, al rodar, la cara entrante y la saliente
-   se cruzan suavemente con desenfoque de profundidad. */
-const MVV_FACES = [
-  { id: 'mision', label: 'misión', body: mision },
-  { id: 'vision', label: 'visión', body: vision },
+/* Slider tipográfico activado por scroll. La sección mide 200vh en el
+   flujo del documento y queda pineada (sticky desde el padre) durante
+   todo ese recorrido. El progreso de scroll se mapea a 3 tramos
+   discretos — uno por slide (misión / visión / valores) — y al cambiar
+   de tramo, el slide actual sale hacia arriba con fade y el siguiente
+   entra desde abajo escribiéndose con efecto máquina de escribir
+   (carácter a carácter, con cursor "_" parpadeante al final).
+
+   Rail estándar de 100vh entre MVV y la siguiente sección. Sin él, la
+   siguiente sección entraría por el borde inferior del viewport durante
+   la segunda mitad del pin de MVV y cortaría visualmente el cuerpo. */
+
+/**
+ * Custom scroll-progress hook que devuelve un MotionValue con el progreso
+ * (0 → 1) del scroll relativo al recorrido natural de la sección.
+ *
+ * El padre `.section-stack > .section` es `position: sticky`. Eso confunde
+ * a useScroll en escenarios sticky-in-sticky: getBoundingClientRect().top
+ * se queda en 0 mientras la sección está pineada, y el offset chain a
+ * veces no resuelve bien con transform aplicado por useStackScroll. Aquí
+ * usamos directamente window.scrollY relativo al offsetTop layout-based
+ * de la sección — siempre fiable, ignora el pin.
+ */
+function useSectionScrollProgress(sectionRef) {
+  const progress = useMotionValue(0);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return undefined;
+
+    let sectionTop = 0;
+    let sectionHeight = 0;
+
+    const measure = () => {
+      // offsetTop chain → posición natural en el documento, no afectada
+      // por position: sticky/fixed de ningún ancestro.
+      let top = 0;
+      let node = el;
+      while (node) {
+        top += node.offsetTop || 0;
+        node = node.offsetParent;
+      }
+      sectionTop = top;
+      sectionHeight = el.offsetHeight || 1; // evitamos /0 en edge cases
+    };
+
+    const update = () => {
+      const scrollY = window.scrollY || window.pageYOffset || 0;
+      const raw = (scrollY - sectionTop) / sectionHeight;
+      progress.set(Math.max(0, Math.min(1, raw)));
+    };
+
+    measure();
+    update();
+
+    const onScroll = () => update();
+    const onResize = () => {
+      measure();
+      update();
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onResize, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return progress;
+}
+
+const MVV_SLIDES = [
+  { id: 'mision', label: 'misión', text: mision },
+  { id: 'vision', label: 'visión', text: vision },
   {
     id: 'valores',
     label: 'valores',
-    body: 'Honestidad. Inclusión. Excelencia. Confianza.',
+    text: 'Honestidad. Inclusión. Excelencia. Confianza.',
   },
 ];
 
-const MVV_STEP_DEG = 360 / MVV_FACES.length; // 120° entre caras
-const MVV_TOTAL_DEG = (MVV_FACES.length - 1) * MVV_STEP_DEG; // 240°
+// Umbrales de scroll que marcan qué slide está activo. La sección mide
+// 200vh en el documento; con 3 slides cada tramo es 1/3 ≈ 33%.
+const SLIDE_THRESHOLDS = [0, 0.34, 0.67];
 
-// Mapping del scrollProgress a la rotación del cilindro:
-// hay un hold corto en mision (entrada), un hold medio en visión (lectura)
-// y un hold LARGO en valores (cierre antes de que la siguiente sección
-// cubra). Las dos transiciones son simétricas (~30% cada una).
-const MVV_PROGRESS_STOPS = [0, 0.06, 0.36, 0.50, 0.78, 1];
-const MVV_ROTATION_STOPS = [0, 0, MVV_STEP_DEG, MVV_STEP_DEG, MVV_TOTAL_DEG, MVV_TOTAL_DEG];
-
+/* Layout fiel a Figma 144:13:
+     - Padding 128px.
+     - Columna izquierda: timeline vertical de 3 dots conectados por
+       líneas finas; junto al dot activo aparece el label del slide
+       ("MISIÓN" / "VISIÓN" / "VALORES") en mono uppercase 20px.
+     - Columna derecha: texto del slide en Host Grotesk Light 48px,
+       line-height 0.9, tracking -0.02em. Se escribe con efecto
+       máquina de escribir (cursor "_" parpadeante).
+     - Al cambiar de slide, el cuerpo saliente sube y se desvanece, el
+       entrante entra desde abajo y arranca el typewriter. */
 export function MVV() {
-  const trackRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: trackRef,
-    offset: ['start start', 'end end'],
+  const sectionRef = useRef(null);
+  const scrollYProgress = useSectionScrollProgress(sectionRef);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [inView, setInView] = useState(false);
+
+  // IntersectionObserver: el typewriter sólo se activa cuando el módulo
+  // está realmente en pantalla. Sin esto, el primer slide empezaría a
+  // escribirse desde el render inicial.
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return undefined;
+    const obs = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { threshold: 0.15 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  // Cambio de slide según progreso de scroll.
+  useMotionValueEvent(scrollYProgress, 'change', (p) => {
+    let next = 0;
+    for (let i = SLIDE_THRESHOLDS.length - 1; i >= 0; i--) {
+      if (p >= SLIDE_THRESHOLDS[i]) {
+        next = i;
+        break;
+      }
+    }
+    setActiveIndex((prev) => (prev === next ? prev : next));
   });
 
-  // Rotación POSITIVA del cilindro (forward roll en scroll-down): la cara
-  // de abajo sube hacia el frente, la del frente se va por arriba.
-  // Hold zones aseguran tiempo de lectura en cada estación.
-  const cylinderRotateX = useTransform(
-    scrollYProgress,
-    MVV_PROGRESS_STOPS,
-    MVV_ROTATION_STOPS,
-    { clamp: true },
-  );
+  const current = MVV_SLIDES[activeIndex];
 
   return (
-    <section id="mvv" className="section mvv-section" data-slide>
-      <div ref={trackRef} className="mvv-track">
-        <div className="mvv-sticky">
-          <div className="mvv-stage">
-            <motion.div
-              className="mvv-cylinder"
-              style={{ rotateX: cylinderRotateX }}
-            >
-              {MVV_FACES.map((face, index) => (
-                <MVVFace
-                  key={face.id}
-                  face={face}
-                  index={index}
-                  cylinderRotateX={cylinderRotateX}
-                />
-              ))}
-            </motion.div>
+    <section
+      ref={sectionRef}
+      id="mvv"
+      className="section mvv-section"
+      data-slide
+    >
+      <div className="mvv-frame">
+        <div className="mvv-row">
+          {/* Timeline vertical: 3 dots con líneas finas. El dot activo
+              se ilumina y el label del slide actual aparece a su derecha. */}
+          <div className="mvv-rail" aria-hidden="true">
+            {MVV_SLIDES.map((slide, i, arr) => (
+              <Fragment key={slide.id}>
+                <div className="mvv-rail-row">
+                  <span
+                    className={`mvv-rail-dot ${
+                      i === activeIndex ? 'is-active' : ''
+                    }`}
+                  />
+                  {i === activeIndex && (
+                    <motion.span
+                      key={`label-${slide.id}`}
+                      className="mvv-rail-label"
+                      initial={{ opacity: 0, x: -6 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{
+                        duration: 0.35,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
+                    >
+                      {slide.label}
+                    </motion.span>
+                  )}
+                </div>
+                {i < arr.length - 1 && (
+                  <span className="mvv-rail-line" />
+                )}
+              </Fragment>
+            ))}
+          </div>
+
+          {/* Cuerpo del slide — texto largo con typewriter. */}
+          <div className="mvv-body-col">
+            <AnimatePresence mode="popLayout">
+              <MVVBody
+                key={current.id}
+                text={current.text}
+                active={inView}
+              />
+            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -311,76 +653,77 @@ export function MVV() {
   );
 }
 
-function MVVFace({ face, index, cylinderRotateX }) {
-  // Para que el cilindro rote en sentido natural (positivo = forward roll
-  // = next-from-below) y mantengamos el orden mision→visión→valores, los
-  // ángulos base de las caras son 0°, -120°, -240°.
-  const baseAngle = -index * MVV_STEP_DEG;
+/* Cuerpo del slide: typewriter sobre el texto, con cursor parpadeante.
+   Al desmontarse (cambio de slide), AnimatePresence dispara el `exit`
+   con y: -40 + opacity 0 (sube y desaparece). El entrante hace
+   y: 32 → 0 + opacity 0 → 1. Posicionamiento absolute para que el
+   saliente y el entrante coexistan sin reflujos durante la transición. */
+function MVVBody({ text, active }) {
+  const [typed, setTyped] = useState(0);
 
-  // Ángulo efectivo de la cara respecto a la cámara:
-  //   effective = baseAngle + cilindroRot
-  // cos(effective): 1 al frente, 0 al canto, -1 a la espalda.
-  const opacity = useTransform(cylinderRotateX, (theta) => {
-    const effective = ((baseAngle + theta) * Math.PI) / 180;
-    return Math.max(0, Math.cos(effective));
-  });
-
-  const filter = useTransform(cylinderRotateX, (theta) => {
-    const effective = ((baseAngle + theta) * Math.PI) / 180;
-    const blur = (1 - Math.max(0, Math.cos(effective))) * 7;
-    return `blur(${blur.toFixed(2)}px)`;
-  });
-
-  // Micro-zoom: la cara crece de 0.94 a 1.0 al acercarse al frente.
-  const scale = useTransform(cylinderRotateX, (theta) => {
-    const effective = ((baseAngle + theta) * Math.PI) / 180;
-    const cos = Math.max(0, Math.cos(effective));
-    return 0.94 + cos * 0.06;
-  });
+  useEffect(() => {
+    if (!active) {
+      setTyped(0);
+      return undefined;
+    }
+    setTyped(0);
+    let i = 0;
+    let timer;
+    const tick = () => {
+      i += 1;
+      setTyped(i);
+      if (i < text.length) {
+        // Velocidad base 14ms + jitter 14ms para sentirse "humano".
+        timer = setTimeout(tick, 14 + Math.random() * 14);
+      }
+    };
+    // Delay inicial: dejamos que la animación de entrada (y: 32 → 0)
+    // termine antes de arrancar el typewriter.
+    timer = setTimeout(tick, 360);
+    return () => clearTimeout(timer);
+  }, [text, active]);
 
   return (
-    <motion.article
-      className="mvv-face"
-      // El transform (rotateX + translateZ) lo gestiona el CSS vía la
-      // variable --mvv-angle. Aquí solo aplicamos opacidad y blur, que no
-      // entran en conflicto con el transform.
-      style={{
-        '--mvv-angle': `${baseAngle}deg`,
-        opacity,
-        filter,
-      }}
+    <motion.p
+      className="mvv-body"
+      initial={{ opacity: 0, y: 32 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -40 }}
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
     >
-      {/* El scale va en un wrapper interno para no pisar el transform 3D
-          que coloca a la cara sobre el cilindro. */}
-      <motion.div className="mvv-face-inner" style={{ scale }}>
-        <span className="mvv-face-eyebrow">{face.label}</span>
-        <p className="mvv-face-text">{face.body}</p>
-      </motion.div>
-    </motion.article>
+      {text.slice(0, typed)}
+      <span className="mvv-body-cursor" aria-hidden="true">_</span>
+    </motion.p>
   );
 }
 
-/* ----------------- EQUIPO (Figma 104:1032) ----------------------- */
-/* Header centrado · grid de 3 cards glass con foto.
-   Cada card: nombre top-left + cargo top-right (mono uppercase 14px) ·
-   foto rellenando la card · rounded 24 · bg rgba(255,255,255,0.05).
-   Las fotos se cargan desde /public/team/{slug}.jpg. */
+/* ----------------- EQUIPO (Figma 104:1032 / 152:220) ------------- */
+/* Header a 2 columnas: título "Equipo" Host 120px a la izquierda
+   (ancho 361) + intro Mona Sans 24px alineada a la derecha (flex-1).
+   Gap 156 entre columnas. Debajo, grid de 3 cards glass con foto
+   (cada card: nombre + cargo top-row mono uppercase 14px, foto al
+   fondo, bg rgba(255,255,255,0.05), rounded 24). */
 export function Equipo() {
   return (
     <section id="equipo" className="section" data-slide>
-      <div className="kk-stack kk-stack-64 kk-stack-center">
-        <motion.div
-          className="kk-header kk-header-center"
-          variants={fade}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-15% 0px' }}
-        >
-          <span className="kk-eyebrow">equipo</span>
-          <RevealText as="h2" className="kk-title kk-title-center">
-            Quiénes estamos detrás
-          </RevealText>
-        </motion.div>
+      <div className="equipo-stack">
+        <div className="equipo-header">
+          <h2 className="equipo-header-title">
+            <RevealText as="span" className="equipo-header-title-line">
+              Equipo
+            </RevealText>
+          </h2>
+          <motion.p
+            className="equipo-header-intro"
+            variants={fade}
+            custom={1}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-15% 0px' }}
+          >
+            {equipo.intro}
+          </motion.p>
+        </div>
 
         <div className="team-grid">
           {equipo.members.map((m, i) => {
@@ -1244,16 +1587,18 @@ const PhysicsPile = forwardRef(function PhysicsPile(
   );
 });
 
-/* El vacio del mercado (104:872) — split-screen full-bleed con pile
-   físico. Cada columna ancla arriba su titular gigante; debajo, las
-   frases caen como pills con gravedad y se apilan. El usuario puede
-   agarrarlas (drag completo, x e y) y al moverlas hay efecto dominó
-   con las pills apiladas encima. Mirror linking: el ref de cada pile
-   se pasa a la otra como mirrorRef, y las dos piles se mueven en
-   espejo al arrastrar (pareadas por índice del array, ver content.js).
-   Se resetea al salir/entrar del viewport. */
+/* Pains vs Gains (Figma 104:872) — dos cards glass redondeadas con el
+   pile físico dentro. Cada card ancla arriba su titular ("Pains" /
+   "Gains" en Host Grotesk 100px); debajo, las frases caen como pills
+   con gravedad y se apilan. El usuario puede agarrarlas (drag completo)
+   y al moverlas hay efecto dominó con las pills apiladas encima. Mirror
+   linking: el ref de cada pile se pasa a la otra como mirrorRef y las
+   dos piles se mueven en espejo (pareadas por índice del array, ver
+   content.js). Se resetea al salir/entrar del viewport.
+   IMPORTANTE: la lógica del PhysicsPile (interacción + animaciones de
+   las pills) NO se toca — sólo cambian los contenedores. */
 export function VacioMercado() {
-  const { eyebrow, left, right } = negocio.vacio;
+  const { left, right } = negocio.vacio;
   const leftPileRef = useRef(null);
   const rightPileRef = useRef(null);
 
@@ -1261,19 +1606,18 @@ export function VacioMercado() {
     <section id="vacio" className="section section-vacio" data-slide>
       <div
         className="vacio-split"
-        aria-label="Comparación visual entre el vacío del mercado y la respuesta KOKORO"
+        aria-label="Comparación visual entre puntos de dolor (Pains) y beneficios (Gains)"
       >
-        <div className="vacio-col vacio-col-dark">
+        <div className="vacio-card">
           <motion.div
-            className="vacio-col-head"
+            className="vacio-card-head"
             variants={fade}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: '-15% 0px' }}
           >
-            <span className="vacio-col-eyebrow mono">{eyebrow}</span>
-            <RevealText as="h2" className="vacio-col-title vacio-col-title-dark">
-              El vacío
+            <RevealText as="h2" className="vacio-card-title">
+              Pains
             </RevealText>
           </motion.div>
           <PhysicsPile
@@ -1284,28 +1628,16 @@ export function VacioMercado() {
           />
         </div>
 
-        <div className="vacio-divider" aria-hidden="true">
-          <motion.span
-            className="vacio-shimmer"
-            initial={{ y: '-110%', opacity: 0 }}
-            whileInView={{ y: '110%', opacity: [0, 1, 0] }}
-            viewport={{ once: true, margin: '-20% 0px' }}
-            transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }}
-          />
-          <span className="vacio-vs">vs.</span>
-        </div>
-
-        <div className="vacio-col vacio-col-light">
+        <div className="vacio-card">
           <motion.div
-            className="vacio-col-head"
+            className="vacio-card-head"
             variants={fade}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: '-15% 0px' }}
           >
-            <span className="vacio-col-eyebrow mono">la respuesta KOKORO</span>
-            <RevealText as="h2" className="vacio-col-title vacio-col-title-light">
-              La respuesta
+            <RevealText as="h2" className="vacio-card-title">
+              Gains
             </RevealText>
           </motion.div>
           <PhysicsPile
@@ -1368,14 +1700,15 @@ export function SolucionDisruptiva() {
   );
 }
 
-/* El motor de escala (137:100) — grid asimétrico 1 + 2 cards glass.
-   Izquierda: card grande "recurrencia" (full height).
-   Derecha: dos cards apiladas "venta directa" + "b2b selectivo". */
+/* Modelo de negocio (Figma 137:117) — header centrado + 3 cards glass
+   iguales en una fila. Cada card: eyebrow mono uppercase + body Mona
+   Sans 18px centrado. Sin asimetrías: las tres comparten misma altura. */
 export function MotorEscala() {
-  const { eyebrow, title, main, side } = negocio.revenue;
+  const { title, main, side } = negocio.revenue;
+  const cards = [main, ...side];
   return (
     <section id="motor" className="section" data-slide>
-      <div className="kk-stack kk-stack-64">
+      <div className="kk-stack kk-stack-128 kk-stack-center">
         <motion.div
           className="kk-header kk-header-center"
           variants={fade}
@@ -1383,51 +1716,39 @@ export function MotorEscala() {
           whileInView="show"
           viewport={{ once: true, margin: '-15% 0px' }}
         >
-          <span className="kk-eyebrow">{eyebrow}</span>
-          <RevealText as="h2" className="kk-title kk-title-center">
+          <RevealText as="h2" className="kk-title-xl kk-title-center">
             {title}
           </RevealText>
         </motion.div>
 
-        <div className="motor-grid">
-          <motion.div
-            className="motor-card motor-card-main"
-            variants={fade}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-15% 0px' }}
-          >
-            <span className="kk-eyebrow">{main.eyebrow}</span>
-            <p className="kk-body kk-body-center">{main.body}</p>
-          </motion.div>
-
-          <div className="motor-stack">
-            {side.map((s, i) => (
-              <motion.div
-                key={s.eyebrow}
-                className="motor-card"
-                variants={fade}
-                custom={i + 1}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, margin: '-15% 0px' }}
-              >
-                <span className="kk-eyebrow">{s.eyebrow}</span>
-                <p className="kk-body kk-body-center">{s.body}</p>
-              </motion.div>
-            ))}
-          </div>
+        <div className="motor-grid-3">
+          {cards.map((c, i) => (
+            <motion.div
+              key={c.eyebrow}
+              className="motor-card-3"
+              variants={fade}
+              custom={i}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: '-15% 0px' }}
+            >
+              <span className="kk-eyebrow">{c.eyebrow}</span>
+              <p className="kk-body kk-body-center">{c.body}</p>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-/* Nuestra ventaja (137:132) — header alineado a la izquierda + 3 columnas
-   gap-64. Cada columna: icon arrow_outward 18px arriba (gap-8) + título
-   Host Medium 24px + body Mona Sans 18px. */
+/* Nuestra ventaja (Figma 137:132 / 151:131) — título grande a la izquierda
+   (Host 120px tracking -4.8px, ancho 672) + filas con divider horizontal.
+   Cada fila: título-izquierda (Host Medium 24px) · body-derecha alineado
+   a la derecha (Mona Sans 20px tracking -0.6px, ancho 400). HR finos
+   entre cada par de filas. */
 export function VentajaCompetitiva() {
-  const { eyebrow, title, items } = negocio.ventaja;
+  const { title, items } = negocio.ventaja;
   return (
     <section id="ventaja" className="section" data-slide>
       <div className="kk-stack kk-stack-128">
@@ -1438,31 +1759,27 @@ export function VentajaCompetitiva() {
           whileInView="show"
           viewport={{ once: true, margin: '-15% 0px' }}
         >
-          <span className="kk-eyebrow">{eyebrow}</span>
-          <RevealText as="h2" className="kk-title">
+          <RevealText as="h2" className="kk-title-xl ventaja-title">
             {title}
           </RevealText>
         </motion.div>
 
-        <div className="kk-arrow-grid">
+        <div className="ventaja-rows">
           {items.map((it, i) => (
-            <motion.div
-              key={it.title}
-              className="kk-arrow-cell kk-arrow-cell-titled"
-              variants={fade}
-              custom={i}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: '-15% 0px' }}
-            >
-              <div className="kk-arrow-cell-head">
-                <span className="kk-arrow" aria-hidden="true">
-                  <ArrowOutward size={18} />
-                </span>
-                <h3 className="kk-arrow-cell-title">{it.title}</h3>
-              </div>
-              <p className="kk-body">{it.body}</p>
-            </motion.div>
+            <Fragment key={it.title}>
+              {i > 0 && <span className="ventaja-rule" aria-hidden="true" />}
+              <motion.div
+                className="ventaja-row"
+                variants={fade}
+                custom={i}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: '-15% 0px' }}
+              >
+                <h3 className="ventaja-row-title">{it.title}</h3>
+                <p className="ventaja-row-body">{it.body}</p>
+              </motion.div>
+            </Fragment>
           ))}
         </div>
       </div>
@@ -1634,10 +1951,13 @@ export function PlanFaseado() {
   );
 }
 
-/* Proyección financiera (Figma 104:742)
-   3 escenarios separados por línea vertical con eyebrow · número grande ·
-   sub-label · pill de resultado coloreado. */
+/* Proyección financiera (Figma 104:742 / 151:218)
+   Título grande "Proyección / financiera" 120px Host a 2 líneas
+   alineado a la izquierda (sin eyebrow). Debajo, rule-block con 3
+   escenarios separados por líneas verticales: eyebrow · número
+   grande · sub-label · pill de resultado coloreado. */
 export function ProyeccionFinanciera() {
+  const titleLines = ['Proyección', 'financiera'];
   const escenarios = [
     {
       key: 'cons',
@@ -1668,18 +1988,18 @@ export function ProyeccionFinanciera() {
   return (
     <section id="caja" className="section" data-slide>
       <div className="kk-stack kk-stack-64">
-        <motion.div
-          className="kk-header kk-header-center"
-          variants={fade}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-15% 0px' }}
-        >
-          <span className="kk-eyebrow">proyección financiera</span>
-          <RevealText as="h2" className="kk-title kk-title-center">
-            Caja desde el primer día
-          </RevealText>
-        </motion.div>
+        <h2 className="caja-title">
+          {titleLines.map((line, i) => (
+            <RevealText
+              key={i}
+              as="span"
+              className="caja-title-line"
+              delay={i * 0.08}
+            >
+              {line}
+            </RevealText>
+          ))}
+        </h2>
 
         <div className="kk-rule-block kk-rule-block-num">
           {escenarios.map((e, i) => (

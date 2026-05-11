@@ -527,25 +527,6 @@ svg {
   top: 0;
 }
 
-/* Modo presentación: secciones independientes, sin stacking ni rail. */
-body.is-presenting .section-stack > .section {
-  position: relative;
-  border-top: none;
-  box-shadow: none;
-  transform: none;
-  filter: none;
-  margin-top: 0;
-}
-
-/* ---------- Modo presentación ---------- */
-body.is-presenting {
-  overflow: hidden;
-}
-
-body.is-presenting .top-bar {
-  opacity: 0;
-  pointer-events: none;
-}
 
 /* ---------- Responsividad ---------- */
 @media (max-width: 720px) {

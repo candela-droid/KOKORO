@@ -312,6 +312,79 @@
 }
 
 /* ==========================================================================
+   Equipo — header a 2 columnas (Figma 152:220)
+   --------------------------------------------------------------------------
+   Sustituye al header centrado anterior. Estructura:
+     · Stack vertical con gap 128 (header + grid de cards).
+     · Header: 2 columnas con gap 156. Título "Equipo" Host 120px ancho
+       361 a la izquierda; intro Mona Sans 24px alineada a la derecha
+       (flex 1, text-align: right).
+     · Grid de cards heredado (.team-grid) sin cambios.
+   En móvil, el header colapsa a columna única y el intro vuelve a
+   alineación izquierda.
+   ========================================================================== */
+.equipo-stack {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(56px, 12vw, 128px);
+  width: 100%;
+  max-width: 1184px;
+  margin: 0 auto;
+}
+
+.equipo-header {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(48px, 11vw, 156px);
+  width: 100%;
+}
+
+.equipo-header-title {
+  flex-shrink: 0;
+  width: 361px;
+  max-width: 100%;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(56px, 11vw, 120px);
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  font-feature-settings: 'dlig' 1;
+}
+
+.equipo-header-title-line {
+  display: block;
+}
+
+.equipo-header-intro {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: right;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: clamp(18px, 1.6vw, 24px);
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  font-feature-settings: 'ordn' 1, 'ss01' 1, 'ss05' 1, 'ss06' 1, 'dlig' 1;
+}
+
+@media (max-width: 900px) {
+  .equipo-header {
+    flex-direction: column;
+    gap: clamp(20px, 4vw, 32px);
+  }
+  .equipo-header-title {
+    width: 100%;
+    font-size: clamp(48px, 13vw, 80px);
+  }
+  .equipo-header-intro {
+    text-align: left;
+    font-size: clamp(16px, 4.6vw, 20px);
+  }
+}
+
+/* ==========================================================================
    Team grid (Figma 104:1032) — 3 cards glass con foto
    ========================================================================== */
 .team-grid {
@@ -1170,133 +1243,78 @@
 }
 
 /* ==========================================================================
-   El vacío vs. la respuesta (split-screen marquee, full-bleed)
+   Pains vs Gains (Figma 104:872) — dos cards glass con pile físico
    ==========================================================================
-   La sección entera es el split, edge-to-edge en horizontal y vertical.
-   No hay header externo: cada columna ancla arriba su propio titular
-   gigante (Mona Sans uppercase en dark, Instrument Serif italic en cream)
-   y debajo corre un marquee vertical infinito en CSS en direcciones
-   opuestas (28s up / 32s down). Hover/focus pausa la animación. Un badge
-   "vs." flota sobre el divisor central como cierre conceptual.
+   La sección usa el padding y display:flex column del .section base.
+   Dentro, dos cards rounded 24px con bg glass-soft (mismo color en
+   ambas, el theme decide si es blanco o negro tenue). Cada card tiene
+   un header con el título "Pains"/"Gains" en Host Grotesk 100px y
+   debajo el PhysicsPile cubriendo el resto del card.
 
-   Implementación del loop seamless: duplicamos las frases en el DOM y
-   damos a cada frase un margin-bottom uniforme (incluso la última). Así
-   la "altura de un loop" = altura de una copia, y `translateY(-50%)`
-   coloca la segunda copia exactamente donde estaba la primera.
+   Las pills físicas viven en absolute dentro de la card (overflow
+   hidden + radius 24 las recorta). Color y stroke unificados — los dos
+   cards ahora son visualmente iguales (no hay split dark/cream).
    ========================================================================== */
 
 .section.section-vacio {
-  /* Override total del padding del .section con selector reforzado
-     (section + .section-vacio gana al .section_anterior). La sección
-     es el split, ocupa los 100vh exactos sin márgenes ni huecos. */
-  padding: 0;
+  /* Mantenemos el padding/flex/min-height de .section (no overrides)
+     pero clipeamos por si una pill se saliera durante un drag. */
   overflow: hidden;
-  display: block;
 }
 
-/* Full-bleed defensivo: aunque algún ancestro estuviera limitando el
-   ancho con padding o max-width, el split rompe al ancho del viewport
-   con 100vw + margen negativo equivalente. Garantiza que las dos mitades
-   tocan los bordes laterales de la pantalla. */
+/* Layout de las dos cards: flex 1:1 con gap 24px (Figma). */
 .vacio-split {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  width: 100vw;
-  height: 100vh;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+  flex: 1 1 0;
+  display: flex;
+  align-items: stretch;
+  gap: 24px;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
 }
 
-.vacio-col {
+/* Card individual — wrapper redondeado glass que actúa como caja del
+   simulador (sus límites son los muros del PhysicsPile). overflow:
+   hidden recorta cualquier pill que escape, manteniendo el radio 24. */
+.vacio-card {
+  flex: 1 1 0;
   position: relative;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
-  /* Padding generoso arriba para que el titular respire y se ancle
-     visualmente; padding lateral asimétrico (más ancho hacia el
-     borde exterior, más cerrado hacia el divisor) para reforzar la
-     idea de "cada lado mira al otro". */
-  padding: clamp(72px, 9vw, 144px) clamp(32px, 5vw, 88px) 0;
+  background: var(--glass-bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  overflow: hidden;
+  min-height: clamp(480px, 60vh, 760px);
 }
 
-.vacio-col-dark {
-  background: #0b0b0b;
-  color: var(--ink);
-}
-
-.vacio-col-light {
-  background: #f5f3ee;
-  color: #0b0b0b;
-}
-
-/* Cabecera de columna: eyebrow mono pequeño + titular gigante.
-   z-index bajo (1) para que las pills (z-index 2) puedan cruzar
-   por delante del titular cuando se arrastren hacia arriba. */
-.vacio-col-head {
+/* Cabecera con el título "Pains"/"Gains". z-index bajo (1) para que
+   las pills (z-index 2) puedan cruzar por delante cuando se arrastren
+   hacia arriba. pointer-events: none para que el área del titular no
+   bloquee el drag de las pills. */
+.vacio-card-head {
   position: relative;
   z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: clamp(20px, 2.5vw, 32px);
-  margin-bottom: clamp(40px, 5vw, 72px);
+  padding: clamp(28px, 4vw, 48px);
   pointer-events: none;
 }
 
-.vacio-col-eyebrow {
-  font-family: var(--font-mono);
-  font-size: clamp(11px, 0.85vw, 13px);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.vacio-col-dark .vacio-col-eyebrow {
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.vacio-col-light .vacio-col-eyebrow {
-  color: rgba(11, 11, 11, 0.5);
-}
-
-.vacio-col-title {
+.vacio-card-title {
   margin: 0;
-  line-height: 0.86;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(56px, 8.5vw, 100px);
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: var(--ink);
   font-feature-settings: 'dlig' 1;
 }
 
-.vacio-col-title-dark {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(72px, 11vw, 168px);
-  letter-spacing: -0.04em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.96);
-}
-
-.vacio-col-title-light {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-weight: 400;
-  font-size: clamp(76px, 12vw, 184px);
-  letter-spacing: -0.02em;
-  color: #0b0b0b;
-}
-
-/* Pile físico — contenedor que ocupa el espacio restante bajo el head
-   y actúa como caja del simulador (sus límites son los muros). Las
-   pills viven en absolute dentro de él y son posicionadas por el rAF
-   loop del componente PhysicsPile.
-   - overflow:hidden para clipear si una pill se sale en un drag rápido
-     (también la lógica de drag clampa a los muros).
-   - touch-action:none evita que el navegador interprete el drag como
-     scroll en mobile/táctil. */
-/* Pile absoluta cubriendo TODA la columna (de top:0 a bottom):
-   así las pills caen desde arriba del todo, atraviesan el área
-   del titular y aterrizan al fondo. El usuario puede arrastrarlas
-   por cualquier parte de la columna, incluida la zona del título.
-   El titular vive en .vacio-col-head (z-index 1) y las pills en
-   z-index 2, así que visualmente se superponen al texto cuando
-   pasan por su altura. */
+/* Pile físico — cubre toda la card (top:0 a bottom). Las pills caen
+   desde arriba, atraviesan el área del titular y aterrizan al fondo.
+   El usuario puede arrastrarlas por cualquier parte de la card.
+   - overflow:hidden para clipear si una pill se sale en un drag rápido.
+   - touch-action:none evita scroll del navegador al arrastrar en táctil. */
 .vacio-pile {
   position: absolute;
   inset: 0;
@@ -1307,19 +1325,20 @@
   z-index: 2;
 }
 
-/* Pill base — fondo casi transparente, stroke suave, padding
-   más generoso y tipografía Mona Sans (la misma a ambos lados).
-   La transformación la maneja JS frame a frame; aquí sólo
-   definimos look + estado de cursor para drag. */
+/* Pill base — píldora glass redondeada (radius 81 ≈ Figma). Padding
+   24/12 (Figma), tipografía Host Grotesk 20px. Theme-aware: usa los
+   tokens --glass-bg-soft / --ink / --border, así adapta solo a light. */
 .vacio-pill {
   position: absolute;
   top: 0;
   left: 0;
-  padding: 14px 22px;
-  border-radius: 999px;
-  border: 1px solid;
+  padding: 12px 24px;
+  border-radius: 81px;
+  border: 1px solid var(--border);
+  background: var(--glass-bg-soft);
+  color: var(--ink);
   white-space: nowrap;
-  line-height: 1;
+  line-height: 1.5;
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
@@ -1328,7 +1347,7 @@
   transform-origin: center;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  font-family: var(--font-body);
+  font-family: var(--font-display);
   font-weight: 400;
   font-size: clamp(15px, 1.4vw, 20px);
   letter-spacing: -0.005em;
@@ -1343,10 +1362,12 @@
   cursor: grabbing;
 }
 
-/* Override del cursor:none global del cursor custom — sobre pills
-   sí queremos que se vea el cursor nativo (manita / closed hand).
-   La especificidad (.has-custom-cursor + .vacio-pill = 2 clases)
-   gana al .has-custom-cursor * global aunque ambos sean !important. */
+.vacio-pill:hover {
+  border-color: var(--ink);
+}
+
+/* Override del cursor:none global del cursor custom — sobre pills sí
+   queremos cursor nativo (manita / closed hand) durante el drag. */
 .has-custom-cursor .vacio-pill {
   cursor: grab !important;
 }
@@ -1356,174 +1377,59 @@ body.is-grabbing .vacio-pill {
   cursor: grabbing !important;
 }
 
-.vacio-pile-dark .vacio-pill {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.16);
-  color: rgba(255, 255, 255, 0.92);
-}
-
-.vacio-pile-dark .vacio-pill:hover {
-  border-color: rgba(255, 255, 255, 0.32);
-}
-
-.vacio-pile-light .vacio-pill {
-  background: rgba(11, 11, 11, 0.04);
-  border-color: rgba(11, 11, 11, 0.14);
-  color: rgba(11, 11, 11, 0.88);
-}
-
-.vacio-pile-light .vacio-pill:hover {
-  border-color: rgba(11, 11, 11, 0.32);
-}
-
-/* Estado activo — la pill agarrada y su pareja-espejo se
-   iluminan con inversión de color: solid bg en el ink de la
-   columna, texto en el bg, y un halo suave para reforzar. La
-   transición es instantánea al pintar (la maneja la regla
-   transition de .vacio-pill). */
-.vacio-pile-dark .vacio-pill.is-active {
-  background: rgba(255, 255, 255, 0.96);
-  color: #0b0b0b;
-  border-color: rgba(255, 255, 255, 1);
+/* Estado activo — pill agarrada (y su pareja-espejo) invierte colores.
+   Theme-aware: en dark queda blanca con texto negro; en light, negra
+   con texto crema. Halo suave para reforzar el "tap" visual. */
+.vacio-pill.is-active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
   box-shadow:
-    0 8px 28px rgba(255, 255, 255, 0.22),
-    0 0 0 4px rgba(255, 255, 255, 0.08);
+    0 8px 28px rgba(0, 0, 0, 0.18),
+    0 0 0 4px var(--glass-bg-strong);
 }
 
-.vacio-pile-light .vacio-pill.is-active {
-  background: #0b0b0b;
-  color: #f5f3ee;
-  border-color: #0b0b0b;
-  box-shadow:
-    0 8px 28px rgba(11, 11, 11, 0.32),
-    0 0 0 4px rgba(11, 11, 11, 0.1);
-}
-
-
-/* Divisor central — 1px hairline. Sirve también de track del shimmer.
-   overflow:visible para que el badge "vs." pueda asomar a ambos lados. */
-.vacio-divider {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 1px;
-  height: 100%;
-  background: rgba(120, 120, 120, 0.18);
-  transform: translateX(-50%);
-  z-index: 2;
-  overflow: visible;
-}
-
-/* Shimmer — gradiente vertical que recorre el divisor una vez al entrar
-   en viewport. Le da personalidad sin ser intrusivo. */
-.vacio-shimmer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 30%;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.85) 50%,
-    transparent 100%
-  );
-  pointer-events: none;
-}
-
-/* Badge "vs." — pill mono uppercase flotando sobre el divisor a la
-   altura de los titulares. Cose conceptualmente las dos mitades. */
-.vacio-vs {
-  position: absolute;
-  top: clamp(108px, 13.5vw, 196px);
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 16px;
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  border: 1px solid var(--rule-color);
-  border-radius: 999px;
-  z-index: 4;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-/* Reduced motion — sin shimmer y sin transición en las pills. La
-   simulación física se desactiva desde JS (placeStatic posiciona las
-   pills apoyadas en el suelo sin animación). */
+/* Reduced motion — sin transiciones en pills. El JS desactiva la
+   simulación física (placeStatic posiciona las pills apoyadas en el
+   suelo sin animación). */
 @media (prefers-reduced-motion: reduce) {
-  .vacio-shimmer {
-    display: none;
-  }
   .vacio-pill {
     transition: none;
     cursor: default;
   }
 }
 
-/* Mobile (≤ 720px) — stack vertical: dark arriba, cream abajo.
-   Sin marquee (rendimiento + legibilidad). Las frases se muestran
-   estáticas; ocultamos las copias duplicadas. */
-@media (max-width: 720px) {
-  .section.section-vacio {
-    min-height: auto;
+/* Tablet (≤ 900px): mantenemos las dos cards lado a lado pero con
+   menos padding y título más pequeño. */
+@media (max-width: 900px) {
+  .vacio-card-head {
+    padding: clamp(24px, 5vw, 36px);
   }
+  .vacio-card-title {
+    font-size: clamp(56px, 12vw, 88px);
+  }
+}
+
+/* Mobile (≤ 600px) — apilamos cards en columna. Cada una mantiene su
+   altura mínima para que las pills tengan sitio para caer. */
+@media (max-width: 600px) {
   .vacio-split {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
-    height: auto;
-    /* Mantenemos el full-bleed con 100vw + margen negativo aunque
-       cambiemos a stack vertical. */
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-    margin-right: calc(50% - 50vw);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
   }
-  .vacio-col {
-    padding: clamp(56px, 10vw, 88px) clamp(24px, 6vw, 36px) clamp(40px, 8vw, 64px);
+  .vacio-card {
+    flex: 0 0 auto;
     min-height: 70vh;
   }
-  .vacio-col-head {
-    margin-bottom: clamp(24px, 5vw, 40px);
-    gap: clamp(14px, 3vw, 20px);
+  .vacio-card-head {
+    padding: 24px;
   }
-  .vacio-col-title-dark,
-  .vacio-col-title-light {
-    font-size: clamp(56px, 16vw, 96px);
+  .vacio-card-title {
+    font-size: clamp(52px, 14vw, 72px);
   }
-  .vacio-divider {
-    width: 100%;
-    height: 1px;
-    top: 50%;
-    left: 0;
-    transform: translateY(-50%);
-  }
-  .vacio-shimmer {
-    width: 30%;
-    height: 100%;
-    top: 0;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.85) 50%,
-      transparent 100%
-    );
-  }
-  .vacio-vs {
-    top: 50%;
-    left: 50%;
-  }
-  /* Pills algo más compactas en mobile pero conservando la
-     misma tipografía Mona Sans (sólo bajamos padding y fuente). */
   .vacio-pill {
-    padding: 12px 18px;
+    padding: 10px 18px;
     font-size: clamp(14px, 3.8vw, 17px);
   }
 }
@@ -1942,133 +1848,859 @@ body.is-grabbing .vacio-pill {
 
 /* ==========================================================================
    MVV — Misión / Visión / Valores (Figma 144:13)
-   Cilindro 3D real: las 3 caras viven sobre un tubo único que rota como
-   sólido. La sección mide 300vh y mantiene un escenario sticky de 100vh.
+
+   Layout fiel al Figma:
+     - Padding 128px alrededor (en clamp para responsive).
+     - Columna izquierda: timeline vertical de 3 dots conectados por
+       líneas finas; el dot activo se ilumina y el label del slide
+       aparece a su derecha (Host Grotesk 20px uppercase).
+     - Columna derecha: texto del cuerpo en Host Grotesk Light 48px,
+       line-height 0.9, tracking -0.02em. Se escribe con efecto máquina
+       de escribir + cursor "_" parpadeante.
+
+   Mecánica de scroll: la sección mide 200vh en el documento, sticky
+   desde el padre. Eliminamos el rail con la siguiente sección
+   (`.mvv-section + .section { margin-top: 0 }`) para que Equipo entre
+   directo cuando termina el recorrido — sin huecos.
    ========================================================================== */
+
 .mvv-section {
-  /* La sección no centra contenido — el track se encarga del layout interno. */
+  display: block;
+  height: 200vh;
   padding: 0;
-  min-height: auto;
+  overflow: hidden;
+}
+
+/* IMPORTANTE: dejamos el rail estándar (margin-top: 100vh) entre MVV y
+   la siguiente sección. Sin rail, Equipo empezaría a entrar por el
+   borde inferior del viewport durante la segunda mitad del scroll
+   pineado de MVV (porque Equipo.offsetTop = MVV.offsetTop + 200vh,
+   y la natural-top de Equipo baja desde 200vh hasta 0 durante el pin),
+   cortando visualmente el cuerpo del slide. Con el rail, Equipo no
+   entra hasta que MVV termina sus 200vh pineados — así el frame de
+   MVV ocupa exactamente 100vh limpios. */
+
+/* Frame: ocupa los 100vh visibles y centra vertical+horizontalmente la
+   composición (rail + cuerpo). Sin padding aquí — el padding va en
+   `.mvv-row` para que el centrado del frame quede limpio. */
+.mvv-frame {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Row: la composición real rail + cuerpo. Anchura limitada con
+   max-width para que no se desparrame en pantallas anchas; padding
+   horizontal en clamp para responsive. align-items: stretch hace que
+   la rail tome la misma altura que el cuerpo (que define la altura
+   con su min-height = 6 líneas), así la timeline encaja con el texto. */
+.mvv-row {
+  display: flex;
+  align-items: stretch;
+  gap: clamp(40px, 9vw, 128px);
+  width: 100%;
+  max-width: 1440px;
+  padding: 0 clamp(24px, 6vw, 96px);
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   Rail / timeline a la izquierda.
+   ============================================================ */
+.mvv-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: stretch;
+  /* Padding vertical 11px + 6px (= 17px aprox) para que las líneas no
+     toquen los bordes verticales del cuerpo. */
+  padding: 17px 0;
+  flex-shrink: 0;
+}
+
+/* Cada fila: dot + (label si activo). align-items: center mantiene el
+   label alineado verticalmente con el dot. */
+.mvv-rail-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  /* Mantenemos siempre el alto del dot para que la rail no salte
+     cuando el label aparece/desaparece. */
+  min-height: 8px;
+}
+
+.mvv-rail-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ink);
+  opacity: 0.4;
+  flex-shrink: 0;
+  transition: opacity 0.45s var(--easing), transform 0.45s var(--easing);
+}
+
+.mvv-rail-dot.is-active {
+  opacity: 1;
+}
+
+/* Línea entre dots — flex-1 vertical para que se estire según el alto
+   total del frame. El margin-left 3.5px la centra exactamente sobre
+   los dots (mitad de 8px - mitad de 1px). */
+.mvv-rail-line {
+  flex: 1 1 auto;
+  width: 1px;
+  margin-left: 3.5px;
+  background: var(--ink);
+  opacity: 0.4;
+  min-height: 32px;
+}
+
+/* Label del slide activo. Tipografía display uppercase 20px en color
+   eyebrow (rgba(255,255,255,0.3) en dark) para que respire. */
+.mvv-rail-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(15px, 1.4vw, 20px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--eyebrow);
+  white-space: nowrap;
+  font-feature-settings: 'dlig' 1;
+  display: inline-block;
+}
+
+/* ============================================================
+   Cuerpo a la derecha.
+   ============================================================ */
+.mvv-body-col {
+  flex: 1 1 0;
+  position: relative;
+  /* Reservamos altura mínima ≈ 6 líneas del texto más largo (la
+     misión) para que el rail estire la timeline sin saltos durante
+     el typewriter. line-height 0.9 × 48px × 6 ≈ 260px. */
+  min-height: calc(6 * 0.9 * clamp(28px, 3.6vw, 48px));
+  display: flex;
+  align-items: flex-start;
+}
+
+/* El cuerpo va en absolute para que durante la transición (popLayout)
+   el saliente y el entrante coexistan superpuestos sin reflujos. */
+.mvv-body {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 300; /* Host Grotesk Light, como el Figma */
+  font-size: clamp(28px, 3.6vw, 48px);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-feature-settings: 'dlig' 1;
+  text-wrap: pretty;
+  will-change: transform, opacity;
+}
+
+/* Cursor "_" — color del texto, blink on/off duro (clásico terminal). */
+.mvv-body-cursor {
+  display: inline-block;
+  margin-left: 0.08em;
+  color: var(--ink);
+  animation: mvvCursorBlink 1.05s steps(2, end) infinite;
+}
+
+@keyframes mvvCursorBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 900px) {
+  .mvv-row {
+    gap: clamp(24px, 5vw, 48px);
+    padding: 0 clamp(24px, 6vw, 48px);
+  }
+  .mvv-body {
+    font-size: clamp(24px, 4.6vw, 36px);
+  }
+  .mvv-body-col {
+    min-height: calc(7 * 0.9 * clamp(24px, 4.6vw, 36px));
+  }
+  .mvv-rail-label {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 600px) {
+  .mvv-row {
+    /* Gap reducido pero mantenemos el layout horizontal — la
+       timeline se vuelve estrecha pero legible, el cuerpo gana espacio. */
+    gap: 20px;
+    padding: 0 20px;
+  }
+  .mvv-rail {
+    padding: 11px 0;
+  }
+  .mvv-rail-row {
+    gap: 14px;
+  }
+  .mvv-rail-line {
+    min-height: 24px;
+  }
+  .mvv-body {
+    font-size: clamp(20px, 5.4vw, 28px);
+    line-height: 1;
+  }
+  .mvv-body-col {
+    min-height: calc(8 * 1 * clamp(20px, 5.4vw, 28px));
+  }
+}
+
+/* prefers-reduced-motion: cursor sin parpadeo. Las transiciones de
+   slide se atenúan automáticamente vía framer-motion. */
+@media (prefers-reduced-motion: reduce) {
+  .mvv-body-cursor {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* ==========================================================================
+   Mobile-first responsive layer
+   --------------------------------------------------------------------------
+   Capa de cierre para que la experiencia en móvil mantenga el carácter
+   inmersivo y la legibilidad del desktop. Trabajamos en 3 breakpoints:
+     · ≤ 900px — tablets pequeñas y móviles
+     · ≤ 600px — móviles
+     · ≤ 380px — móviles muy estrechos
+   Todas las reglas son aditivas: no cambian el desktop, sólo apilan, ajustan
+   tamaños y reducen padding cuando el viewport se queda corto.
+   ========================================================================== */
+
+@media (max-width: 900px) {
+  /* Padding más comedido para que el contenido respire sin "ahogarse"
+     en pantallas estrechas, manteniendo aire suficiente para que la
+     barra superior no choque con el contenido. */
+  .section {
+    padding: clamp(80px, 18vw, 120px) clamp(20px, 5vw, 32px) clamp(56px, 10vw, 96px);
+  }
+
+  /* Apilamos también el bloque legal / dossier del contacto. */
+  .contacto-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .contacto-actions .btn {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Header del hero compacto: el clamp de padding-top ya escala, pero
+     evitamos que el "más información" toque el borde inferior del viewport
+     cuando la barra del navegador móvil ocupe espacio. */
+  .hero {
+    padding-top: clamp(120px, 22vw, 200px);
+    padding-bottom: clamp(20px, 5vw, 32px);
+  }
+
+  /* El símbolo japonés del módulo Kokoro era 160px mínimo — desproporcionado
+     en mobile. Bajamos el suelo a 96px para que respire. */
+  .kokoro-jp {
+    font-size: clamp(96px, 32vw, 220px);
+    margin-bottom: 32px;
+  }
+  .kokoro-meaning {
+    font-size: clamp(18px, 4.6vw, 24px);
+  }
+
+  /* Header + body de Resumen / Problema / Gap apilados con menos gap. */
+  .kk-stack-128 { gap: clamp(40px, 8vw, 80px); }
+  .kk-stack-64 { gap: clamp(32px, 6vw, 56px); }
+
+  /* Cuerpo más legible. */
+  .kk-body { font-size: 17px; line-height: 1.45; }
+  .kk-body-italic { font-size: 17px; line-height: 1.45; }
+}
+
+/* Móvil real ─────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* Reducimos aún más el padding de sección — el contenido necesita ancho. */
+  .section {
+    padding: clamp(72px, 22vw, 96px) 20px clamp(48px, 12vw, 72px);
+  }
+
+  /* Hero: el "KOKORO" es lo único que vive aquí, así que lo dejamos lo
+     más grande posible sin desbordar. white-space: nowrap se mantiene;
+     ajustamos el clamp para usar todo el ancho. */
+  .hero-mark {
+    font-size: clamp(72px, 24vw, 120px);
+    letter-spacing: -0.05em;
+  }
+  .hero-cue-label { font-size: 13px; }
+
+  /* Resumen / títulos: en mobile escala más agresiva para que quepa. */
+  .kk-title {
+    font-size: clamp(40px, 11vw, 56px);
+    letter-spacing: -2px;
+    line-height: 0.85;
+  }
+
+  /* Page hero (sub-páginas /modelo y /mvp). */
+  .page-hero-title {
+    font-size: clamp(56px, 16vw, 88px);
+  }
+  .page-hero-lead {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  /* Inner hero (otra variante de hero usado por /mvp). */
+  .inner-title { font-size: clamp(48px, 13vw, 72px); }
+  .inner-pill { font-size: 13px; padding: 12px 18px; }
+  .inner-lead { font-size: 16px; }
+
+  /* Problema / gap / etc — celdas con padding compacto. */
+  .kk-rule-cell {
+    padding: 36px 20px;
+  }
+
+  /* Celdas con icono — gap menor entre ícono y body. */
+  .kk-rule-cell-icon { gap: 16px; }
+
+  /* Plan faseado: la card baja un poco la altura mínima en mobile real
+     para que no domine la pantalla. La regla de 900px ya pone columnas
+     en stack — aquí sólo acotamos tamaño. */
+  .plan-card {
+    min-height: 460px;
+  }
+  .plan-card-body { padding: 20px; gap: 16px; }
+  .plan-card-title { font-size: clamp(24px, 6.4vw, 32px); }
+
+  /* Contacto: tipografía y meta más compactas. */
+  .contacto-meta-row {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+
+  /* Equipo: cards algo más bajas para que se vean 1.5 cards en pantalla. */
+  .team-card {
+    height: clamp(340px, 78vw, 440px);
+  }
+
+  /* Footer: ya apila a 600px en su propia regla — reforzamos espaciado. */
+  .footer-strip {
+    gap: 8px;
+  }
+}
+
+/* Móviles muy estrechos (iPhone SE 1ª gen, Galaxy Fold cerrado…) ───── */
+@media (max-width: 380px) {
+  .section {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .hero { padding-left: 16px; padding-right: 16px; }
+  .hero-mark { font-size: clamp(64px, 22vw, 96px); }
+  .kk-title { font-size: clamp(36px, 10vw, 48px); }
+  .page-hero-title { font-size: clamp(48px, 14vw, 72px); }
+}
+
+/* MVV — móviles muy pequeños: tipografía y rail aún más compactos para
+   que el texto largo (misión / visión) no se desborde verticalmente. */
+@media (max-width: 480px) {
+  .mvv-row { padding: 0 16px; gap: 16px; }
+  .mvv-body {
+    font-size: clamp(18px, 5vw, 24px);
+    line-height: 1.05;
+  }
+  .mvv-body-col {
+    min-height: calc(9 * 1.05 * clamp(18px, 5vw, 24px));
+  }
+  .mvv-rail-label { font-size: 12px; }
+  .mvv-rail-row { gap: 12px; }
+  .mvv-rail-line { min-height: 20px; }
+}
+
+/* Touch devices — desactivamos hovers que esconden info por defecto. */
+@media (hover: none) and (pointer: coarse) {
+  /* En cards de equipo, el bio se muestra siempre via la regla 900px.
+     Reforzamos: nada de hovers que oculten contenido. */
+  .team-card-overlay {
+    opacity: 1 !important;
+  }
+  .team-card-photo img {
+    filter: none !important;
+    transform: none !important;
+  }
+}
+
+/* ==========================================================================
+   QUÉ ES (Figma 151:189) y SOBRE KOKORO (151:192) / ROADMAP (151:201)
+   --------------------------------------------------------------------------
+   Patrones nuevos a partir de los nodos del Home y MVP:
+   - Título display 120px (kk-title-xl) — versión grande del kk-title.
+   - que-es-* — sección con stack alineado a la derecha (items-end).
+   - sobre-* / .section-sobre — sección con stack alineado a la izquierda,
+     título a dos líneas, fila de tabs, body 28px.
+   ========================================================================== */
+
+/* Título display 120px (Host Grotesk tracking -4.8px line 0.8) */
+.kk-title-xl {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(56px, 11vw, 120px);
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  font-feature-settings: 'dlig' 1;
+}
+
+/* ----- Intro dual (Figma 151:215 "Qué es" + 151:212 "Mínimo Producto
+   Viable") -----
+   Patrón a 2 columnas compartido por ambas secciones:
+     · Título Host 120px (1 o varias líneas con .intro-dual-title-line)
+       a la izquierda, flex-shrink 0 — no se rompe al achicar.
+     · Body 28px Mona Sans a la derecha (flex-1 / min-width 0). Dos
+       párrafos con fragmento Instrument Serif italic intercalado en
+       el primero.
+     · Gap 156px entre columnas, padding 128 alrededor (heredado del
+       .section).
+   En móvil colapsa a columna única. */
+.intro-dual {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(48px, 11vw, 156px);
+  width: 100%;
+  max-width: 1184px;
+  margin: 0 auto;
+}
+
+.intro-dual-title {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(56px, 11vw, 120px);
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  white-space: nowrap;
+  font-feature-settings: 'dlig' 1;
+}
+
+.intro-dual-title-line {
   display: block;
 }
 
-.mvv-track {
-  position: relative;
-  height: 300vh; /* 1 viewport por cara */
-  width: 100%;
-}
-
-.mvv-sticky {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  width: 100%;
+.intro-dual-body {
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(40px, 6vw, 96px);
-  box-sizing: border-box;
-  overflow: hidden;
-  perspective: 2200px;
-  perspective-origin: 50% 50%;
+  flex-direction: column;
+  gap: clamp(20px, 2vw, 28px);
 }
 
-.mvv-stage {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  max-width: 1480px;
+.intro-dual-para {
+  font-family: var(--font-body);
+  font-size: clamp(20px, 2vw, 28px);
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.intro-dual-italic {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+@media (max-width: 900px) {
+  .intro-dual {
+    flex-direction: column;
+    gap: clamp(32px, 6vw, 48px);
+  }
+  .intro-dual-title {
+    font-size: clamp(48px, 13vw, 80px);
+    white-space: normal;
+  }
+  .intro-dual-para {
+    font-size: clamp(18px, 4.6vw, 22px);
+  }
+}
+
+/* ----- "Sobre Kokoro" / "Roadmap" (151:192 / 151:201) ----- */
+.section-sobre {
+  align-items: flex-start;
+}
+
+.sobre-stack {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transform-style: preserve-3d;
-}
-
-/* El cilindro: rota como sólido en X, llevándose a las 3 caras consigo. */
-.mvv-cylinder {
-  position: relative;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(48px, 6vw, 82px);
   width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  will-change: transform;
+  max-width: 1184px;
+  margin: 0 auto;
 }
 
-/* Cada cara está fijada a su ángulo (--mvv-angle) sobre el cilindro y
-   desplazada en Z por el radio del tubo (translateZ). El radio en vh es
-   importante: define cómo de "redondo" se ve el rodamiento. */
-.mvv-face {
+.sobre-title {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(56px, 11vw, 120px);
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  font-feature-settings: 'dlig' 1;
+}
+
+.sobre-title-line {
+  display: block;
+}
+
+/* Fila de tabs — la activa en Instrument Serif italic blanco; las demás
+   en Mona Sans con opacity 0.2 (Figma rgba(255,255,255,0.2)). gap 82. */
+.sobre-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(32px, 4vw, 82px);
+  align-items: flex-start;
+  width: 100%;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+.sobre-tab {
+  position: relative;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: clamp(18px, 1.7vw, 24px);
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  color: rgba(255, 255, 255, 0.2);
+  background: transparent;
+  border: none;
+  padding: 0 0 8px;
+  cursor: pointer;
+  text-transform: none;
+  white-space: nowrap;
+  transition: color 0.35s var(--easing), opacity 0.35s var(--easing);
+  font-feature-settings: 'ordn' 1, 'dlig' 1;
+}
+
+.sobre-tab-label {
+  display: inline-block;
+}
+
+.sobre-tab:hover {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.sobre-tab.is-active {
+  font-family: var(--font-serif);
+  font-style: italic;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* Indicador del tab activo: un subrayado fino que se desliza entre
+   posiciones gracias al layoutId de framer-motion. Anchurea al ancho
+   del label automáticamente porque está posicionado con left/right 0
+   sobre el botón. */
+.sobre-tab-indicator {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--ink);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+/* Light theme — los inactivos se ven con opacidad sobre tinta oscura. */
+:root[data-theme='light'] .sobre-tab {
+  color: rgba(11, 11, 11, 0.2);
+}
+:root[data-theme='light'] .sobre-tab:hover {
+  color: rgba(11, 11, 11, 0.5);
+}
+:root[data-theme='light'] .sobre-tab.is-active {
+  color: var(--ink);
+}
+
+/* Stack de cuerpos. Todos los <p.sobre-body> viven en la misma celda
+   del grid 1×1 — el contenedor reserva siempre la altura del cuerpo
+   más largo, así el título y las pestañas no saltan al cambiar de tab. */
+.sobre-body-stack {
+  display: grid;
+  grid-template-columns: 1fr;
+  width: 672px;
+  max-width: 100%;
+  position: relative;
+}
+
+/* Body Mona Sans 28px tracking -0.84px line 1.4 ancho 672px.
+   grid-area 1/1 apila todos los párrafos en la misma celda; el activo
+   se ve y los inactivos quedan invisibles pero ocupando espacio. */
+.sobre-body {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: clamp(20px, 2vw, 28px);
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  font-feature-settings: 'ordn' 1, 'ss01' 1, 'ss05' 1, 'dlig' 1;
+  pointer-events: none;
+  /* word-spacing: 0 para que el espacio entre palabras venga del
+     margin-right de cada .sobre-word. */
+  word-spacing: 0;
+}
+
+.sobre-body.is-active {
+  pointer-events: auto;
+}
+
+/* Cada palabra es un motion.span con display: inline-block para que se
+   pueda animar transform/blur. El margin-right hace de espacio entre
+   palabras (ya que el split por espacios elimina los whitespaces). El
+   will-change ayuda a que el blur no flickee en GPU. */
+.sobre-word {
+  display: inline-block;
+  margin-right: 0.28em;
+  will-change: transform, opacity, filter;
+}
+
+.sobre-word.is-italic {
+  font-family: var(--font-serif);
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 900px) {
+  .sobre-title {
+    font-size: clamp(48px, 13vw, 80px);
+  }
+  .sobre-tabs {
+    gap: clamp(20px, 4vw, 40px);
+  }
+  .sobre-tab {
+    font-size: clamp(16px, 4vw, 20px);
+  }
+  .sobre-body-stack {
+    width: 100%;
+  }
+  .sobre-body {
+    font-size: clamp(18px, 4.6vw, 22px);
+  }
+}
+
+/* prefers-reduced-motion: ya tenemos un override global que neutraliza
+   las transitions/animations CSS, pero framer-motion ignora eso. Aquí
+   "congelamos" el blur para que no se vea raro en estos cuerpos
+   (la opacidad sigue cambiando vía framer pero al instante por la
+   regla global). */
+@media (prefers-reduced-motion: reduce) {
+  .sobre-word {
+    filter: none !important;
+  }
+}
+
+/* ==========================================================================
+   SOBRE KOKORO — variante "split" (Figma 151:192)
+   --------------------------------------------------------------------------
+   En vez del stack vertical con gap fijo (como hace Roadmap, anchor='stack'),
+   en Sobre Kokoro el módulo distribuye su contenido: título arriba, sub-
+   grupo (tabs + body) abajo, separados por todo el espacio disponible.
+   Para que funcione, el .sobre-stack tiene que estirarse verticalmente —
+   le damos flex: 1 dentro del .section (que es flex column con min-height
+   100vh) y aplicamos justify-content: space-between.
+   ========================================================================== */
+.section-sobre.is-split {
+  justify-content: flex-start;
+}
+
+.sobre-stack.is-split {
+  flex: 1 1 auto;
+  min-height: 0;
+  justify-content: space-between;
+  gap: 0;
+}
+
+/* Sub-grupo tabs + body — anclado al fondo de .sobre-stack vía
+   justify-between del padre. Gap interno 48 (Figma 151:211). */
+.sobre-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(32px, 4vw, 48px);
+  width: 100%;
+  max-width: 1184px;
+}
+
+/* ==========================================================================
+   Proyección financiera — título grande de dos líneas (Figma 151:218)
+   --------------------------------------------------------------------------
+   El header se ha simplificado: ya no hay eyebrow "PROYECCIÓN FINANCIERA"
+   con título 80px centrado. Ahora es un único título Host 120px a dos
+   líneas (Proyección / financiera) alineado a la izquierda, ancho total.
+   ========================================================================== */
+.caja-title {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(56px, 11vw, 120px);
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  width: 100%;
+  font-feature-settings: 'dlig' 1;
+}
+
+.caja-title-line {
+  display: block;
+}
+
+@media (max-width: 900px) {
+  .caja-title {
+    font-size: clamp(48px, 13vw, 80px);
+  }
+}
+
+/* ==========================================================================
+   Modelo de negocio — versión 3 cards iguales (Figma 137:117)
+   --------------------------------------------------------------------------
+   Sustituye al motor-grid 1+2. Tres cards en fila, todas con la misma
+   altura y mismo padding. */
+.motor-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  width: 100%;
+  max-width: 1184px;
+}
+
+.motor-card-3 {
+  background: var(--glass-bg-soft);
+  border-radius: 24px;
+  padding: 48px clamp(28px, 4vw, 64px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(16px, 2vw, 28px);
+  gap: 16px;
   text-align: center;
-  margin: 0;
-  padding: 0 clamp(24px, 4vw, 64px);
-  transform: rotateX(var(--mvv-angle, 0deg)) translateZ(38vh);
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
-  will-change: transform, opacity, filter;
+  min-height: 226px;
 }
 
-.mvv-face-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 14px;
-  line-height: 1;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.3);
-  font-feature-settings: 'dlig' 1;
-  padding: 0 4px;
+.motor-card-3 .kk-body {
+  max-width: 320px;
 }
 
-.mvv-face-text {
+@media (max-width: 900px) {
+  .motor-grid-3 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .motor-card-3 {
+    padding: 36px 24px;
+    min-height: 180px;
+  }
+}
+
+/* ==========================================================================
+   Nuestra ventaja — versión rows con HR (Figma 151:131)
+   --------------------------------------------------------------------------
+   Título grande a la izquierda + filas con divider horizontal: cada
+   fila tiene título-izquierda (Host Medium 24px) + body-derecha
+   (Mona Sans 20px text-right ancho 400). */
+.ventaja-title {
+  width: 672px;
+  max-width: 100%;
+}
+
+.ventaja-rows {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(24px, 4vw, 48px);
+  width: 100%;
+}
+
+.ventaja-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+  width: 100%;
+  color: var(--ink);
+}
+
+.ventaja-row-title {
+  flex-shrink: 0;
+  width: 200px;
   font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(28px, 4.2vw, 48px);
-  line-height: 1.05;
+  font-weight: 500;
+  font-size: clamp(20px, 1.8vw, 24px);
+  line-height: 1.4;
   letter-spacing: -0.02em;
   color: var(--ink);
-  max-width: 1240px;
+  font-feature-settings: 'ordn' 1, 'dlig' 1;
+}
+
+.ventaja-row-body {
+  width: 400px;
+  max-width: 100%;
+  text-align: right;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: clamp(17px, 1.5vw, 20px);
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  font-feature-settings: 'ordn' 1, 'ss01' 1, 'dlig' 1;
+}
+
+.ventaja-rule {
+  display: block;
   width: 100%;
-  margin: 0;
-  font-feature-settings: 'dlig' 1;
-  text-wrap: balance;
+  height: 1px;
+  background: var(--rule-color);
 }
 
-@media (max-width: 720px) {
-  .mvv-track { height: 280vh; }
-  .mvv-face {
-    transform: rotateX(var(--mvv-angle, 0deg)) translateZ(30vh);
-    padding: 0 16px;
+@media (max-width: 900px) {
+  .ventaja-title {
+    width: 100%;
   }
-  .mvv-face-text { font-size: clamp(26px, 6.4vw, 38px); }
-}
-
-/* prefers-reduced-motion: anulamos el cilindro y apilamos verticalmente. */
-@media (prefers-reduced-motion: reduce) {
-  .mvv-track { height: auto; }
-  .mvv-sticky {
-    position: relative;
-    height: auto;
-    padding: 96px 24px;
-    perspective: none;
-  }
-  .mvv-stage { height: auto; }
-  .mvv-cylinder {
-    height: auto;
-    display: flex;
+  .ventaja-row {
     flex-direction: column;
-    gap: 80px;
-    transform: none !important;
+    gap: 12px;
   }
-  .mvv-face {
-    position: relative;
-    inset: auto;
-    transform: none !important;
-    opacity: 1 !important;
-    filter: none !important;
+  .ventaja-row-title {
+    width: 100%;
+    font-size: 20px;
+  }
+  .ventaja-row-body {
+    width: 100%;
+    text-align: left;
+    font-size: 17px;
   }
 }

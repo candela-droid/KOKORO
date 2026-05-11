@@ -32,8 +32,32 @@ export function RouterProvider({ children }) {
       window.history.pushState({}, '', to);
     }
     setPath(to);
-    // Asegura que cada cambio de página arranca arriba
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    // Reset duro de scroll. Llamamos por triplicado para pisar cualquier
+    // estado en curso: Lenis con immediate+force ignora el lerp activo,
+    // window.scrollTo bypassa el smooth-scroll del navegador, y los
+    // scrollTop directos cubren navegadores que en ocasiones pintan
+    // el árbol nuevo en la posición vieja del documentElement/body.
+    if (window.__lenis?.scrollTo) {
+      window.__lenis.scrollTo(0, { immediate: true, force: true });
+    }
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+    // Doble RAF: vuelve a forzar el reset una vez React ha commit-eado
+    // el árbol nuevo y el browser ha hecho layout. Sin esto, a veces el
+    // scroll del nuevo árbol queda en la misma Y que tenía el viejo.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (window.__lenis?.scrollTo) {
+          window.__lenis.scrollTo(0, { immediate: true, force: true });
+        }
+        window.scrollTo(0, 0);
+      });
+    });
   }, []);
 
   return (

@@ -1,9 +1,9 @@
 /* ==========================================================================
-   TopBar — fiel a Figma 104:502
-   ─ Logo izquierda · pill container con 4 pills a la derecha
-   ─ Pill activa: bg blanco, texto #0b0b0b, px16 py12
-   ─ Pills inactivas: texto blanco, px16 py8
-   ─ Container pill: bg rgba(255,255,255,0.1), p6, rounded 99
+   TopBar — fiel a Figma 104:502 en desktop, hamburguesa fullscreen en móvil.
+   ─ Desktop (>= 901px): Logo a la izquierda · pill nav + toggle tema +
+     descargar dossier a la derecha
+   ─ Móvil (<= 900px): Logo · toggle tema · botón hamburguesa que abre
+     un drawer negro full-screen con navegación tipográfica grande
    ========================================================================== */
 
 /* Wrapper fijo que contiene el header. Auto-hide al scroll-down: el wrap
@@ -29,7 +29,7 @@ header.top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 32px clamp(20px, 2.5vw, 40px) 16px;
+  padding: 24px clamp(20px, 2.5vw, 40px) 16px;
   background: transparent;
   border: none;
   box-shadow: none;
@@ -40,8 +40,8 @@ header.top-bar {
     -webkit-backdrop-filter 0.4s var(--easing);
 }
 
-/* El navbar se mantiene transparente en todo momento — sin fondo, ni blur,
-   ni border, ni shadow. El glass de los pills/iconos ya da contraste. */
+/* El navbar se mantiene transparente — el glass de los pills/iconos
+   ya da contraste sobre el contenido. */
 .top-bar.is-scrolled {
   background: transparent;
   backdrop-filter: none;
@@ -50,15 +50,7 @@ header.top-bar {
   box-shadow: none;
 }
 
-/* Auto-hide: la barra se desliza fuera de pantalla al scroll-down y
-   reaparece al scroll-up. translateY -100% saca la barra entera + un
-   pequeño extra para que no asome el sombreado. */
-.top-bar.is-hidden {
-  transform: translate3d(0, -110%, 0);
-  pointer-events: none;
-}
-
-/* ---------- Logo (Frame 1 / 104:503) ---------- */
+/* ---------- Logo ---------- */
 .tb-logo {
   display: inline-flex;
   align-items: center;
@@ -79,15 +71,13 @@ header.top-bar {
 }
 
 /* ---------- Acciones del lado derecho ---------- */
-/* Container que agrupa el pill-nav + los botones icono (sun, projector).
-   Gap 8px entre el pill-nav y los botones, igual que el Figma 131:72. */
 .tb-actions {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
-/* ---------- Nav pill container (Frame 2 / 104:505) ---------- */
+/* ---------- Nav pill container (Frame 2 / 104:505) — DESKTOP ---------- */
 .tb-nav-pill {
   display: inline-flex;
   align-items: center;
@@ -100,9 +90,7 @@ header.top-bar {
   -webkit-backdrop-filter: blur(20px) saturate(140%);
 }
 
-/* ---------- Pills ----------
-   En el nuevo diseño todas las pills son del mismo tamaño (px16 py12).
-   La diferencia entre activa e inactiva es solo el bg/color, no el padding. */
+/* ---------- Pills ---------- */
 .tb-pill {
   display: inline-flex;
   align-items: center;
@@ -121,23 +109,16 @@ header.top-bar {
   font-feature-settings: 'dlig' 1;
 }
 
-.tb-pill:hover {
-  background: var(--glass-bg-soft);
-}
+.tb-pill:hover { background: var(--glass-bg-soft); }
 
-/* Pill activa: invierte fg/bg respecto al tema. En dark = bg blanco texto
-   negro; en light = bg negro texto blanco. Mantener contraste fuerte. */
+/* Pill activa: invierte fg/bg respecto al tema. */
 .tb-pill.is-active {
   background: var(--ink);
   color: var(--bg);
 }
-.tb-pill.is-active:hover {
-  background: var(--ink);
-}
+.tb-pill.is-active:hover { background: var(--ink); }
 
-/* ---------- Botones icono (sun, projector) ---------- */
-/* Mismo estilo glass que el pill-nav: bg blanco al 10% + border-radius 99
-   para que sean círculos perfectos a 50x50. */
+/* ---------- Botones icono (toggle tema, descarga, hamburguesa) ---------- */
 .tb-icon-btn {
   display: inline-flex;
   align-items: center;
@@ -154,57 +135,193 @@ header.top-bar {
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   transition: background 0.3s var(--easing), color 0.3s var(--easing),
     transform 0.3s var(--easing);
+  text-decoration: none;
 }
 
-.tb-icon-btn:hover {
-  background: var(--glass-bg-strong);
+.tb-icon-btn:hover { background: var(--glass-bg-strong); }
+.tb-icon-btn:active { transform: scale(0.94); }
+
+/* La hamburguesa sólo aparece en móvil; en desktop la ocultamos. */
+.tb-menu-btn { display: none; }
+
+/* ==========================================================================
+   Mobile menu — drawer fullscreen entrando por la derecha
+   ========================================================================== */
+.mobile-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
-.tb-icon-btn:active {
-  transform: scale(0.94);
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 41;
+  width: 100vw;
+  max-width: 100vw;
+  background: #0b0b0b; /* siempre negro, independientemente del tema */
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 24px clamp(24px, 6vw, 56px) clamp(32px, 8vw, 56px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.tb-icon-btn[aria-disabled='true'] {
-  opacity: 0.5;
-  cursor: default;
+.mobile-menu-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: clamp(40px, 10vw, 64px);
 }
 
-.tb-icon-btn[aria-disabled='true']:hover {
-  background: var(--glass-bg);
+.mobile-menu-logo {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -1px;
+  color: #ffffff;
 }
 
-/* ---------- Modo presentación ---------- */
-body.is-presenting .top-bar {
-  opacity: 0;
-  pointer-events: none;
+/* Override del tb-icon-btn dentro del drawer para que sea siempre claro
+   sobre el fondo negro, sin importar el tema. */
+.mobile-menu .tb-icon-btn {
+  background: rgba(255, 255, 255, 0.10);
+  color: #ffffff;
+}
+.mobile-menu .tb-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
 }
 
-/* ---------- Responsive ---------- */
-@media (max-width: 1024px) {
-  .top-bar {
-    flex-direction: column;
-    align-items: flex-start;
-    padding-top: 24px;
-    padding-bottom: 12px;
-    gap: 12px;
-    /* Horizontal padding sigue dictado por la regla base (clamp) para
-       mantener el alineamiento con el slider. */
+.mobile-menu-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 4vw, 28px);
+  padding-top: clamp(8px, 2vw, 24px);
+}
+
+.mobile-menu-link {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 6px 0;
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: clamp(20px, 5vw, 28px);
+  transition: color 0.3s var(--easing);
+}
+
+.mobile-menu-link:hover,
+.mobile-menu-link:focus,
+.mobile-menu-link.is-active {
+  color: #ffffff;
+}
+
+.mobile-menu-link-num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
+
+.mobile-menu-link-label {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 11vw, 64px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-weight: 400;
+}
+
+.mobile-menu-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: clamp(28px, 8vw, 48px);
+}
+
+.mobile-menu-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 24px;
+  background: #ffffff;
+  color: #0b0b0b;
+  border-radius: 99px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: opacity 0.3s var(--easing), transform 0.2s var(--easing);
+}
+.mobile-menu-cta:hover { opacity: 0.85; }
+.mobile-menu-cta:active { transform: scale(0.98); }
+
+.mobile-menu-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  padding-top: 8px;
+}
+
+/* Cuando el menú está abierto, prohibimos el scroll del documento. */
+body.is-menu-open {
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   Responsive — breakpoint de hamburguesa a 900px
+   ========================================================================== */
+
+/* Tablet — los pills se vuelven más compactos pero siguen visibles. */
+@media (max-width: 1100px) {
+  .tb-pill {
+    padding: 10px 14px;
+    font-size: 13px;
   }
-  .tb-nav-pill {
-    width: 100%;
-    overflow-x: auto;
-    justify-content: flex-start;
-    scrollbar-width: none;
-  }
-  .tb-nav-pill::-webkit-scrollbar { display: none; }
 }
 
-@media (max-width: 600px) {
-  .top-bar {
-    padding-top: 20px;
-    padding-bottom: 10px;
+/* Móvil real — ocultamos pill nav y descarga, mostramos hamburguesa. */
+@media (max-width: 900px) {
+  .tb-nav-pill,
+  .tb-icon-btn-desktop {
+    display: none;
   }
-  .tb-mark { font-size: 18px; }
-  .tb-pill { font-size: 12px; padding: 7px 12px; }
-  .tb-pill.is-active { padding: 10px 12px; }
+
+  .tb-menu-btn {
+    display: inline-flex;
+  }
+
+  header.top-bar {
+    padding: 16px clamp(16px, 5vw, 24px) 12px;
+  }
+
+  .tb-mark {
+    font-size: 18px;
+  }
+}
+
+/* Tamaños XS — apretamos el padding del header. */
+@media (max-width: 480px) {
+  header.top-bar {
+    padding: 14px 16px 10px;
+  }
+
+  .tb-icon-btn {
+    width: 44px;
+    height: 44px;
+  }
 }

@@ -26,7 +26,3 @@
   will-change: transform;
 }
 
-/* Ocultar en presentación — el HUD propio gobierna el progreso. */
-body.is-presenting .scroll-progress {
-  opacity: 0;
-}

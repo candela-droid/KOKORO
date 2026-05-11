@@ -218,8 +218,10 @@ export function ChevronRight({ size = 20, className = '' }) {
   );
 }
 
-/* ProjectorScreen — icono Material/Phosphor para entrar a modo presentación. */
-export function Projector({ size = 24, className = '' }) {
+/* Hamburger menu (3 líneas) — usado en TopBar móvil para abrir el drawer
+   de navegación. Stroke 1.5px currentColor, square caps para coherencia
+   con el resto del set (ArrowDownward, ArrowOutward). */
+export function Menu({ size = 24, className = '' }) {
   return (
     <svg
       width={size}
@@ -231,25 +233,63 @@ export function Projector({ size = 24, className = '' }) {
       aria-hidden="true"
     >
       <path
-        d="M12 2v3"
+        d="M4 7h16M4 12h16M4 17h16"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="square"
+      />
+    </svg>
+  );
+}
+
+/* Close (X) — usado dentro del drawer para cerrar el menú móvil. */
+export function Close({ size = 24, className = '' }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        d="M6 6l12 12M18 6L6 18"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="square"
+      />
+    </svg>
+  );
+}
+
+/* Download — flecha hacia abajo dentro de una bandeja, usado para
+   "descargar dossier" en el TopBar (sustituye al botón de presentación). */
+export function Download({ size = 20, className = '' }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        d="M12 3v12m0 0l-5-5m5 5l5-5"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
-      />
-      <rect
-        x="3"
-        y="5"
-        width="18"
-        height="14"
-        rx="1.5"
-        stroke="currentColor"
-        strokeWidth="1.5"
+        strokeLinejoin="round"
       />
       <path
-        d="M8 22h8M12 19v3"
+        d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );

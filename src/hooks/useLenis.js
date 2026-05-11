@@ -3,7 +3,6 @@ import Lenis from 'lenis';
 
 /**
  * Inicializa smooth-scroll global tipo AG1 / Nomad.
- * Se desactiva en modo presentación (cuando body tiene `is-presenting`).
  */
 export default function useLenis() {
   useEffect(() => {
@@ -36,19 +35,8 @@ export default function useLenis() {
       };
     }
 
-    // Pausar smooth-scroll durante modo presentación
-    const observer = new MutationObserver(() => {
-      if (document.body.classList.contains('is-presenting')) {
-        lenis.stop();
-      } else {
-        lenis.start();
-      }
-    });
-    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-
     return () => {
       cancelAnimationFrame(rafId);
-      observer.disconnect();
       lenis.destroy();
       if (typeof window !== 'undefined' && window.__lenis === lenis) {
         delete window.__lenis;

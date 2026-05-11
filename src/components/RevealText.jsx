@@ -24,9 +24,25 @@ const lineWrap = {
   marginBottom: '-0.22em',
 };
 
+/* Trigger por defecto del whileInView. El sistema de stack-scroll usa
+   sticky + rail de 100vh, así que un margin negativo en bottom dispara
+   la animación demasiado pronto (el elemento entra por abajo del
+   viewport mucho antes de que el usuario "llegue" a él visualmente).
+   Disparamos cuando el elemento ya ha entrado al menos un 40% en el
+   viewport por arriba — es decir, su borde superior está en el 60%
+   del viewport. Combinado con el delay base de abajo, la animación
+   se reproduce mientras el módulo termina de subir hasta su posición
+   sticky en lugar de haber acabado antes de llegar. */
+const REVEAL_VIEWPORT = { once: true, margin: '0px 0px -40% 0px' };
+/* Delay base — pequeño retraso adicional desde el trigger para que la
+   animación no se sienta atropellada con el scroll. */
+const REVEAL_BASE_DELAY = 0.2;
+
 /**
  * RevealText - aparece palabra a palabra al entrar en viewport.
  * `as` permite renderizar como h1, h2, p…
+ * `delay` se suma al delay base; útil cuando varios bloques deben
+ * encadenarse (ej. título a varias líneas).
  */
 export default function RevealText({
   children,
@@ -50,8 +66,8 @@ export default function RevealText({
       <motion.span
         initial="hidden"
         whileInView="show"
-        viewport={{ once: true, margin: '-15% 0px' }}
-        transition={{ delayChildren: delay }}
+        viewport={REVEAL_VIEWPORT}
+        transition={{ delayChildren: REVEAL_BASE_DELAY + delay }}
         style={{ display: 'inline' }}
       >
         {words.map((w, i) => (
