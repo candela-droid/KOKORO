@@ -1,16 +1,41 @@
 import { useEffect } from 'react';
 import Lenis from 'lenis';
 
+/* Breakpoint compartido con useStackScroll y los overrides CSS de móvil.
+   Por debajo de 1024px tratamos el dispositivo como táctil/portátil
+   pequeño y devolvemos al navegador el control del scroll (nativo). */
+const MOBILE_QUERY = '(max-width: 1024px)';
+
 /**
  * Inicializa smooth-scroll global tipo AG1 / Nomad.
+ *
+ * En móvil (≤ 1024px) NO se inicializa Lenis: queremos scroll nativo del
+ * navegador para que no haya momentum extra ni interferencias con el
+ * scroll del navegador. Si el viewport cambia de tamaño (rotación,
+ * desktop a tablet emulada) reinicia el efecto.
  */
 export default function useLenis() {
   useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (window.matchMedia && window.matchMedia(MOBILE_QUERY).matches) {
+      // Móvil: scroll nativo, sin Lenis.
+      return undefined;
+    }
+    /* Configuración mayo 2026 (segunda iteración):
+       - smoothWheel: true  → vuelve el suavizado de Lenis para acompañar
+         el stack-scroll "presentación". Sin esto, la rueda discreta hacía
+         que las transiciones pinned→rail→siguiente se vieran stepped.
+       - lerp: 0.14 (más alto que el 0.08 original) → reduce el momentum
+         que el usuario notaba antes ("la página se sigue moviendo después
+         de soltar"). Mayor lerp = el target alcanza al input más rápido.
+       - duration: 1.0 (más corto que el 1.4 original) → scrollTo
+         programáticos (hero cue, SectionIndicator) más reactivos sin
+         perder el carácter suave. */
     const lenis = new Lenis({
-      duration: 1.4,
+      duration: 1.0,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
-      lerp: 0.08,
+      lerp: 0.14,
     });
 
     let rafId;

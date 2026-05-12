@@ -263,6 +263,12 @@ export const negocio = {
   // mirror linking — agarrar una mueve la del otro lado en espejo.
   vacio: {
     eyebrow: 'el punto de dolor',
+    /* Figma 104:872 — el módulo lleva ahora un header propio: título
+       grande "Situación / actual" + body Mona Sans alineado a la derecha
+       sobre las dos cards Pains/Gains. */
+    displayTitle: ['Situación', 'actual'],
+    displayBody:
+      'Cada día, las personas con alergias e intolerancias se enfrentan a un mercado que las ha ignorado. Kokoro nace para invertir esa ecuación: a la izquierda, lo que duele; a la derecha, la respuesta.',
     title: 'El vacío vs. la respuesta',
     left: [
       'Trazas invisibles',
@@ -461,29 +467,38 @@ export const referencias = [
 ];
 
 export const equipo = {
-  intro:
-    'Estos somos los que soñamos, diseñamos y ejecutamos Kokoro Foods día a día. Nuestra mayor garantía es nuestro compromiso con este proyecto.',
-  // Cada miembro: nombre + cargo (mono uppercase) + photo path.
-  // Las fotos se sirven desde /public/team/. Si no existe el archivo, la
-  // card muestra el fondo glass con un placeholder de iniciales.
+  /* El intro mezcla Mona Sans con un tramo intercalado en Instrument Serif
+     Regular (no itálica) — replica Figma 162:7. Lo partimos en tres tramos
+     para que el componente pueda renderizar el del medio con la fuente
+     serif sin tener que parsear strings. */
+  introLead: 'Estos somos los que ',
+  introEmph: 'soñamos, diseñamos y ejecutamos Kokoro Foods día a día.',
+  introTail:
+    ' Nuestra mayor garantía es nuestro compromiso con este proyecto.',
+  /* Cada miembro: nombre + cargo + photo + linkedin. El orden importa: en
+     desktop se renderizan en este mismo orden, izquierda → derecha,
+     coincidiendo con Figma 162:32 (Iván, Candela, Olga). */
   members: [
     {
-      name: 'Olga Noblejas',
-      role: 'COO',
-      photo: '/team/olga.jpg',
-      bio: 'Lidera operaciones y producción. Background en gestión de cadena de suministro premium y apertura de puntos físicos. Responsable de que cada producto llegue con el estándar KOKORO.',
+      name: 'Iván Cosmen',
+      role: 'CFO',
+      photo: '/team/ivan.webp',
+      linkedin: 'https://www.linkedin.com/in/ivancosmen/',
+      bio: 'Lidera la disciplina financiera y la estrategia de capital. Background en M&A y crecimiento de marcas de consumo. Garantiza decisiones con criterio desde el primer día.',
     },
     {
       name: 'Candela Pinteño',
       role: 'CEO',
-      photo: '/team/candela.jpg',
+      photo: '/team/candela.webp',
+      linkedin: 'https://www.linkedin.com/in/candela-pinte%C3%B1o/',
       bio: 'Founder y CEO. Dirige marca, producto y experiencia. Background en branding premium y dirección creativa, con foco obsesivo en inclusión alimentaria y diseño editorial.',
     },
     {
-      name: 'Iván Cosmen',
-      role: 'CFO',
-      photo: '/team/ivan.jpg',
-      bio: 'Lidera la disciplina financiera y la estrategia de capital. Background en M&A y crecimiento de marcas de consumo. Garantiza decisiones con criterio desde el primer día.',
+      name: 'Olga Noblejas',
+      role: 'COO',
+      photo: '/team/olga.webp',
+      linkedin: 'https://www.linkedin.com/in/olga-n-585437292/',
+      bio: 'Lidera operaciones y producción. Background en gestión de cadena de suministro premium y apertura de puntos físicos. Responsable de que cada producto llegue con el estándar KOKORO.',
     },
   ],
 };

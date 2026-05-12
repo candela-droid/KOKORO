@@ -15,7 +15,6 @@ export default function ModeloPage() {
     <div className="section-stack">
       <InnerHero
         id="modelo-hero"
-        eyebrow={negocio.hero.eyebrow}
         title={negocio.hero.title}
         lead={negocio.hero.lead}
       />

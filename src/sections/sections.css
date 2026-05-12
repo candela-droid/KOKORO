@@ -70,13 +70,38 @@
   font-feature-settings: 'dlig' 1;
 }
 
-/* Cue inferior: "más información" + arrow_downward */
+/* Cue inferior: "más información" + arrow_downward. Es un <button> para
+   que sea clicable y baje a la primera sección — reseteamos los estilos
+   por defecto del botón y añadimos estados de hover/focus accesibles. */
 .hero-cue {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
   color: var(--ink);
+  /* Reset estilos de botón nativo */
+  background: transparent;
+  border: 0;
+  padding: 8px 12px;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: opacity 0.3s var(--easing), transform 0.3s var(--easing);
+}
+
+.hero-cue:hover {
+  opacity: 0.8;
+  transform: translateY(2px);
+}
+
+.hero-cue:active {
+  transform: translateY(4px);
+}
+
+.hero-cue:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 6px;
 }
 
 .hero-cue-label {
@@ -312,34 +337,65 @@
 }
 
 /* ==========================================================================
-   Equipo — header a 2 columnas (Figma 152:220)
+   Equipo — header a 2 columnas + tira de fotos B/N con pills LinkedIn
    --------------------------------------------------------------------------
-   Sustituye al header centrado anterior. Estructura:
-     · Stack vertical con gap 128 (header + grid de cards).
+   Figma 162:3 (mayo 2026, rediseño completo). Sustituye al grid de cards
+   anterior por una composición editorial:
+
+     · Stack vertical (header arriba, equipo-stage abajo) con justify-between
+       para que las fotos queden ancladas al borde inferior de la sección.
      · Header: 2 columnas con gap 156. Título "Equipo" Host 120px ancho
-       361 a la izquierda; intro Mona Sans 24px alineada a la derecha
-       (flex 1, text-align: right).
-     · Grid de cards heredado (.team-grid) sin cambios.
-   En móvil, el header colapsa a columna única y el intro vuelve a
-   alineación izquierda.
-   ========================================================================== */
+       361 a la izquierda; intro Mona Sans 20px alineada a la derecha.
+       Dentro del intro, el tramo "soñamos, diseñamos y ejecutamos Kokoro
+       Foods día a día" cambia a Instrument Serif Regular (no italic).
+     · Tira de fotos: tres figuras en B/N pegadas al bottom, con una pill
+       flotante (backdrop-blur 125, glass rgba 0.1) anclada en una esquina
+       de cada foto (izq/centro/dcha). Cada pill es <a> a LinkedIn con
+       hover, active y focus.
+
+   En móvil, header colapsa a columna y la tira a una columna con foto
+   centrada y pill debajo. */
+.section.section-equipo {
+  /* El stack vertical "se asienta" con justify-end para que la tira de
+     fotos toque el borde inferior del área visible. Al pie del viewport
+     hay un único elemento fijo (.section-indicator, ~54px desktop /
+     42px móvil) — la barra de progreso horizontal se retiró del shell.
+     Reservamos exactamente la altura del strip como padding-bottom para
+     que las imágenes terminen justo encima, no por detrás. El padding-
+     top de .section sigue dando aire arriba. */
+  justify-content: flex-end;
+  overflow: hidden;
+  padding-bottom: var(--section-indicator-h);
+}
+
 .equipo-stack {
   display: flex;
   flex-direction: column;
-  gap: clamp(56px, 12vw, 128px);
+  /* Header pegado directamente sobre el stage de fotos (gap 0). El bloque
+     header+stage se ancla al fondo del stack con justify-content:
+     flex-end → el aire sobrante queda arriba, entre el padding-top de
+     .section y la cabecera. Antes usábamos space-between + gap clamp(48,
+     8vw, 128) pero el resultado era una banda enorme entre título y
+     fotos; el dueño del diseño lo prefiere todo apelmazado abajo. */
+  justify-content: flex-end;
+  gap: 0;
   width: 100%;
   max-width: 1184px;
   margin: 0 auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .equipo-header {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: clamp(48px, 11vw, 156px);
   width: 100%;
+  flex-shrink: 0;
 }
 
 .equipo-header-title {
+  margin: 0;
   flex-shrink: 0;
   width: 361px;
   max-width: 100%;
@@ -359,19 +415,274 @@
 .equipo-header-intro {
   flex: 1 1 0;
   min-width: 0;
+  margin: 0;
   text-align: right;
   font-family: var(--font-body);
   font-weight: 400;
-  font-size: clamp(18px, 1.6vw, 24px);
+  font-size: clamp(16px, 1.4vw, 20px);
   line-height: 1.4;
   letter-spacing: -0.03em;
   color: var(--ink);
   font-feature-settings: 'ordn' 1, 'ss01' 1, 'ss05' 1, 'ss06' 1, 'dlig' 1;
 }
 
+/* Tramo intercalado en serif: copia exacta del Figma 162:7 — Instrument
+   Serif Regular SIN itálica. Mezclar Mona Sans + serif en el mismo
+   párrafo crea ese matiz editorial sin necesidad de aumentar el size. */
+.equipo-header-intro-emph {
+  font-family: var(--font-serif);
+  font-style: normal;
+  font-feature-settings: 'ordn' 1;
+}
+
+/* ==========================================================================
+   Stage de fotos — Figma 162:32 + 162:24
+   --------------------------------------------------------------------------
+   Las fotos son cutouts B/N con alpha (ver public/team/*.webp) y van
+   DIRECTAMENTE sobre el fondo de la sección — sin contenedor, sin caja
+   ni fallback visual. Reproducimos exactamente el Figma:
+     · 162:32 (row): Iván + Olga como flex items con justify-between, en
+       los extremos izquierdo y derecho del stage. Se solapan con Candela
+       en horizontal (cada uno alrededor del centro).
+     · 162:24 (Candela): absolute, centrada horizontalmente y POR DELANTE
+       de las otras dos (z-index 3). Es la foto "principal" del trío, más
+       ancha por la proporción nativa del cutout (~0.91 vs ~0.74).
+   ========================================================================== */
+.equipo-stage {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  width: 100%;
+  /* Altura fija (no flex-grow) — las fotos son cutouts de tamaño concreto
+     y queremos que mantengan su escala sin estirarse cuando el stack
+     tiene espacio extra. flex: 0 0 auto evita que el stack las haga
+     crecer; el space-between del stack reparte ese espacio extra como
+     gap arriba del stage. Coincide con la frame h:617 del Figma a una
+     escala responsive razonable. */
+  flex: 0 0 auto;
+  height: clamp(440px, 68vh, 660px);
+}
+
+/* Cada miembro es una <figure> sin caja: solo contiene la img y la pill
+   (caption). Su tamaño está dictado por el <img height:100%> + ratio
+   nativo del cutout. position:relative para que el caption se ancle a
+   ella vía absolute. */
+.equipo-member {
+  position: relative;
+  margin: 0;
+  height: 100%;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.equipo-member-img {
+  display: block;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: bottom center;
+  filter: grayscale(1);
+  transition:
+    filter 0.5s var(--easing),
+    transform 0.6s var(--easing);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Iván — flex item del row 162:32, anclado al borde izquierdo. z-index
+   bajo: queda DETRÁS de Candela cuando se superponen. */
+.equipo-member.is-left {
+  z-index: 1;
+}
+
+/* Olga — flex item del row 162:32, anclado al borde derecho. z-index
+   bajo, simétrica de Iván. */
+.equipo-member.is-right {
+  z-index: 1;
+}
+
+/* Candela — Figma 162:24: absolute, centrada horizontalmente y POR
+   DELANTE (z-index 3). El cutout es naturalmente más ancho por su ratio
+   (0.91), así que al renderizarse a la misma altura que Iván/Olga
+   aparece visualmente más grande, como en el Figma. Al estar absolute,
+   los flex children Iván/Olga calculan justify-between como si fueran
+   solo dos → quedan en los extremos exactos del stage.
+
+   Centrado SIN transform: usamos el patrón clásico `left:0; right:0 +
+   margin-inline:auto + width:fit-content`. Es importante NO usar
+   `translateX(-50%)` porque framer-motion (motion.figure) escribe la
+   transform inline al animar `y`, lo cual pisaría nuestro translate y
+   dejaría a Candela descentrada tapando a Olga. Con margin auto el
+   centrado vive sólo en el layout, indemne a la transform animada. */
+.equipo-member.is-center {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin-inline: auto;
+  width: fit-content;
+  height: 100%;
+  z-index: 3;
+}
+
+/* Caption con la pill — vive en absolute para flotar sobre la foto en
+   una coordenada concreta dentro del bounding box de cada figure. Las
+   coordenadas % salen del Figma 162:39 / 162:36 / 162:37, normalizadas
+   al tamaño de cada frame (no del stage entero). */
+.equipo-member-caption {
+  margin: 0;
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  /* El <a> dentro recupera pointer-events: auto. Mantener el caption
+     non-interactive evita "huecos clicables" alrededor de la pill. */
+}
+
+/* Las tres pills viven ahora en la MISMA línea horizontal cerca del pie
+   de cada foto — Figma v2 las pasó de tres alturas distintas (top 191/
+   143/59) a un único top:481 en su row coord system (~22% desde el
+   bottom del frame de cada miembro). Usamos `bottom: 22%` para que
+   queden visualmente alineadas en y aunque cada figura tenga ratio
+   distinto. */
+.equipo-member.is-left .equipo-member-caption {
+  /* Iván — Figma 162:39 left:20 sobre frame 443. → 20/443 ≈ 4.5%. */
+  bottom: 22%;
+  left: 4.5%;
+}
+
+.equipo-member.is-center .equipo-member-caption {
+  /* Candela — Figma 162:36 left:501 en 162:33, su frame arranca en
+     left:311 width:561. → (501-311)/561 = 34%. */
+  bottom: 22%;
+  left: 34%;
+}
+
+.equipo-member.is-right .equipo-member-caption {
+  /* Olga — Figma 162:37 left:1001 en row 1184, su frame arranca en
+     1184-453=731 width:453. → (1001-731)/453 ≈ 60%. */
+  bottom: 22%;
+  left: 60%;
+}
+
+/* La pill propiamente dicha — Figma v2: glass OSCURO (no claro) con
+   backdrop-blur fino (10px, no 125), border casi invisible. Es la
+   versión más sutil y editorial; antes saturaba demasiado el fondo
+   detrás. pointer-events: auto la rescata para que el click funcione.
+   Usamos `gap` para reservar espacio para la flecha ↗ aunque por
+   defecto esté oculta (width:0). Al hover se expande a su tamaño
+   natural. */
+.equipo-member-pill {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 41px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transform-origin: center;
+  transition:
+    background-color 0.25s var(--easing),
+    border-color 0.25s var(--easing),
+    transform 0.22s var(--easing),
+    gap 0.25s var(--easing),
+    color 0.25s var(--easing);
+}
+
+.equipo-member-name {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: clamp(15px, 1.3vw, 20px);
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  font-feature-settings: 'dlig' 1;
+}
+
+/* Flecha de salida (↗) — afordancia de enlace externo. Por defecto está
+   colapsada (max-width: 0 + opacidad 0); al hover/focus se expande y se
+   anima un toque hacia arriba-derecha. */
+.equipo-member-pill-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translate(-4px, 4px);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: clamp(15px, 1.3vw, 20px);
+  line-height: 1;
+  color: var(--ink);
+  transition:
+    max-width 0.28s var(--easing),
+    opacity 0.22s var(--easing),
+    transform 0.32s var(--easing);
+}
+
+/* Hover: la pill se vuelve un toque más opaca (sigue siendo dark glass,
+   no flip a claro), el border se levanta a 18% y se escala un poco. La
+   foto del miembro pierde el grayscale para añadir énfasis visual. */
+.equipo-member-pill:hover {
+  background: rgba(0, 0, 0, 0.28);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: scale(1.03);
+  gap: 8px;
+}
+.equipo-member-pill:hover .equipo-member-pill-arrow,
+.equipo-member-pill:focus-visible .equipo-member-pill-arrow {
+  max-width: 20px;
+  opacity: 1;
+  transform: translate(0, 0);
+}
+
+.equipo-member-pill:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  gap: 8px;
+}
+
+.equipo-member-pill:active {
+  /* Click-press: micro-hundimiento y reset de escala — feedback táctil. */
+  transform: scale(0.99) translateY(1px);
+}
+
+.equipo-member:has(.equipo-member-pill:hover) .equipo-member-img,
+.equipo-member:has(.equipo-member-pill:focus-visible) .equipo-member-img {
+  filter: grayscale(0);
+  transform: scale(1.015);
+  transform-origin: bottom center;
+}
+
+/* Light theme: el dark glass de Figma sigue funcionando aquí (oscurece la
+   foto B/N detrás), pero el border blanco a 5% no se ve sobre cream, así
+   que lo cambiamos a tinta oscura sutil. Ink también pasa a oscuro para
+   que el nombre se lea sobre el cristal. */
+:root[data-theme='light'] .equipo-member-pill {
+  background: rgba(0, 0, 0, 0.12);
+  border-color: rgba(11, 11, 11, 0.1);
+  color: var(--ink);
+}
+:root[data-theme='light'] .equipo-member-pill:hover {
+  background: rgba(0, 0, 0, 0.22);
+  border-color: rgba(11, 11, 11, 0.18);
+}
+
 @media (max-width: 900px) {
   .equipo-header {
     flex-direction: column;
+    align-items: flex-start;
     gap: clamp(20px, 4vw, 32px);
   }
   .equipo-header-title {
@@ -380,188 +691,45 @@
   }
   .equipo-header-intro {
     text-align: left;
-    font-size: clamp(16px, 4.6vw, 20px);
+    font-size: clamp(15px, 4.4vw, 18px);
   }
 }
 
-/* ==========================================================================
-   Team grid (Figma 104:1032) — 3 cards glass con foto
-   ========================================================================== */
-.team-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  width: 100%;
-}
-
-.team-card {
-  position: relative;
-  height: clamp(320px, 32vw, 412px);
-  background: var(--glass-bg-soft);
-  border-radius: 24px;
-  overflow: hidden;
-  isolation: isolate;
-  cursor: pointer;
-  outline: none;
-}
-
-.team-card:focus-visible {
-  box-shadow: 0 0 0 2px var(--glass-bg-strong);
-}
-
-/* Header con nombre + cargo en mono uppercase, anclado arriba */
-.team-card-header {
-  position: absolute;
-  top: 32px;
-  left: 33px;
-  right: 33px;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-family: var(--font-mono);
-  font-size: 14px;
-  line-height: 1;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  font-feature-settings: 'dlig' 1;
-}
-
-.team-card-name {
-  color: var(--ink);
-}
-
-.team-card-role {
-  /* muted-2 da el efecto de "label secundario" en ambos temas */
-  color: var(--muted);
-}
-
-/* Foto: rellena toda la card. La card tiene overflow:hidden + border-radius
-   así que la foto queda recortada. */
-.team-card-photo {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.team-card-photo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 20%;
-  display: block;
-  transition: filter 0.5s var(--easing), transform 0.7s var(--easing);
-}
-
-/* Al hover: la foto se atenúa y se acerca un toque para enfatizar el overlay */
-.team-card:hover .team-card-photo img,
-.team-card:focus-visible .team-card-photo img {
-  filter: brightness(0.35) blur(2px);
-  transform: scale(1.04);
-}
-
-/* Fallback con iniciales cuando no hay foto disponible */
-.team-card-fallback {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: clamp(56px, 8vw, 96px);
-  font-weight: 400;
-  letter-spacing: -0.04em;
-  /* muted-2 sutil en ambos temas */
-  color: var(--muted-2);
-  opacity: 0.5;
-  user-select: none;
-  pointer-events: none;
-}
-
-/* Overlay con bio — invisible hasta hover/focus.
-   Sobre la foto atenuada, aparece el texto centrado con fade + slide-up. */
-.team-card-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 72px clamp(24px, 3vw, 40px) clamp(24px, 3vw, 40px);
-  background: linear-gradient(
-    180deg,
-    rgba(11, 11, 11, 0) 0%,
-    rgba(11, 11, 11, 0.55) 35%,
-    rgba(11, 11, 11, 0.75) 100%
-  );
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.45s var(--easing);
-}
-
-.team-card:hover .team-card-overlay,
-.team-card:focus-visible .team-card-overlay {
-  opacity: 1;
-}
-
-.team-card-bio {
-  font-family: var(--font-body);
-  font-size: clamp(14px, 1.05vw, 16px);
-  line-height: 1.5;
-  letter-spacing: -0.3px;
-  /* Texto SIEMPRE blanco — el overlay es dark en ambos temas para que la
-     foto se vea siempre con buen contraste. */
-  color: #ffffff;
-  text-align: center;
-  max-width: 36ch;
-  transform: translateY(8px);
-  transition: transform 0.5s var(--easing) 0.05s;
-}
-
-.team-card:hover .team-card-bio,
-.team-card:focus-visible .team-card-bio {
-  transform: translateY(0);
-}
-
-/* Al hover, el header se atenúa ligeramente para que el bio domine la
-   atención sin ocultar del todo el nombre. */
-.team-card-header {
-  transition: opacity 0.4s var(--easing);
-}
-.team-card:hover .team-card-header {
-  opacity: 0.6;
-}
-
-@media (max-width: 900px) {
-  .team-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+/* Tablet / móvil: la tira de tres fotos lado a lado no cabe bien. La
+   apilamos en una sola columna con la pill centrada debajo de cada foto.
+   Quitamos el overlap absolute de Candela — todas como flex items. */
+@media (max-width: 720px) {
+  .equipo-stage {
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
+    height: auto;
   }
-  .team-card {
-    height: clamp(380px, 80vw, 480px);
+  .equipo-member {
+    position: relative;
+    height: clamp(280px, 56vh, 420px);
+    width: 100%;
+    flex: 0 0 auto;
   }
-  /* En mobile/touch no hay hover real — mostramos siempre la bio en una
-     franja inferior con fondo gradiente. */
-  .team-card-overlay {
-    opacity: 1;
-    background: linear-gradient(
-      180deg,
-      rgba(11, 11, 11, 0) 40%,
-      rgba(11, 11, 11, 0.85) 100%
-    );
-    align-items: flex-end;
-    padding-top: 0;
-  }
-  .team-card-bio {
+  /* Reset del absolute de Candela: en móvil va apilada como las otras. */
+  .equipo-member.is-center {
+    position: relative;
+    left: auto;
     transform: none;
   }
-  .team-card-photo img {
-    filter: none;
-    transform: none;
+  .equipo-member-caption {
+    position: static;
+    margin-top: -36px;
+    display: flex;
+    justify-content: center;
+  }
+  .equipo-member.is-left .equipo-member-caption,
+  .equipo-member.is-center .equipo-member-caption,
+  .equipo-member.is-right .equipo-member-caption {
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
   }
 }
 
@@ -1257,25 +1425,100 @@
    ========================================================================== */
 
 .section.section-vacio {
-  /* Mantenemos el padding/flex/min-height de .section (no overrides)
-     pero clipeamos por si una pill se saliera durante un drag. */
+  /* Override del padding-y de .section (clamp 64-128): el Figma 104:872
+     pide 128px arriba y abajo SIEMPRE — y los containers de las cards
+     deben adaptarse a lo que sobra. Si dejásemos el clamp, en viewports
+     estrechos el padding bajaba y la sección se descuadraba respecto al
+     resto del sitio. El horizontal sí escala (clamp), porque ahí el
+     viewport sí condiciona si cabe el header en dos columnas. */
+  padding-top: 128px;
+  padding-bottom: 128px;
   overflow: hidden;
+  justify-content: flex-end;
 }
 
-/* Layout de las dos cards: flex 1:1 con gap 24px (Figma). */
+/* Frame columna (Figma 104:872): header arriba, cards abajo. El gap
+   simula los 128px del Figma; las cards consumen el espacio sobrante
+   con flex: 1 para mantener una altura cómoda independientemente de
+   cuántas líneas tenga el body. */
+.vacio-frame {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(48px, 8vw, 128px);
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Header — dos columnas: título Host 120 a la izq, body Mona Sans 24
+   alineado a la derecha. Gap 156px en Figma; clamp para no ahogarse en
+   viewports anchos. align-items: flex-end para que el body se "siente"
+   sobre la línea base del título a dos líneas. */
+.vacio-header {
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(48px, 11vw, 156px);
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.vacio-display-title {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(56px, 11vw, 120px);
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  font-feature-settings: 'dlig' 1;
+  white-space: nowrap;
+}
+
+.vacio-display-line {
+  display: block;
+}
+
+.vacio-display-body {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: clamp(18px, 2vw, 24px);
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  text-align: right;
+  font-feature-settings: 'ordn' 1, 'ss01' 1, 'ss05' 1, 'ss06' 1, 'dlig' 1;
+}
+
+/* Layout de las dos cards: flex 1:1 con gap 24px (Figma). Ahora vive
+   dentro de .vacio-frame, así que en lugar de tener max-width propio
+   hereda el del frame y crece verticalmente con flex: 1. */
 .vacio-split {
   flex: 1 1 0;
   display: flex;
   align-items: stretch;
   gap: 24px;
   width: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
+  min-height: 0;
 }
 
 /* Card individual — wrapper redondeado glass que actúa como caja del
    simulador (sus límites son los muros del PhysicsPile). overflow:
-   hidden recorta cualquier pill que escape, manteniendo el radio 24. */
+   hidden recorta cualquier pill que escape, manteniendo el radio 24.
+   SIN min-height en desktop: la altura se adapta al espacio que sobra
+   en la sección tras restar padding 128 top/bottom y el header. La
+   cadena flex es:
+     section (100vh, padding 128) → frame (flex column, flex:1)
+       → split (flex row, flex:1) → card (flex:1 row, min-height:0)
+   El min-height:0 es lo que permite que el card se comprima por debajo
+   de su tamaño "natural" cuando el frame manda — sin él, los flex hijos
+   se quedan en su intrinsic min-content y la card no encoge. */
 .vacio-card {
   flex: 1 1 0;
   position: relative;
@@ -1285,7 +1528,7 @@
   border: 1px solid var(--border);
   border-radius: 24px;
   overflow: hidden;
-  min-height: clamp(480px, 60vh, 760px);
+  min-height: 0;
 }
 
 /* Cabecera con el título "Pains"/"Gains". z-index bajo (1) para que
@@ -1299,11 +1542,15 @@
   pointer-events: none;
 }
 
+/* Title Host Grotesk 40px tracking -1.6px (Figma 151:40 / 159:302).
+   Antes era clamp 56-100 (el card era el protagonista visual). Ahora
+   el módulo lleva header propio "Situación / actual" arriba, así que
+   los títulos de card pasan a un segundo plano tipográfico. */
 .vacio-card-title {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(56px, 8.5vw, 100px);
+  font-size: clamp(28px, 3.2vw, 40px);
   line-height: 0.8;
   letter-spacing: -0.04em;
   color: var(--ink);
@@ -1400,13 +1647,26 @@ body.is-grabbing .vacio-pill {
 }
 
 /* Tablet (≤ 900px): mantenemos las dos cards lado a lado pero con
-   menos padding y título más pequeño. */
+   menos padding y título más pequeño. El header del módulo (Situación
+   actual) también colapsa a columna en este breakpoint para que el
+   body no se quede estrujado bajo un title 120px ocupando la pantalla. */
 @media (max-width: 900px) {
+  .vacio-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: clamp(24px, 4vw, 40px);
+  }
+  .vacio-display-body {
+    text-align: left;
+  }
+  .vacio-display-title {
+    font-size: clamp(48px, 11vw, 80px);
+  }
   .vacio-card-head {
     padding: clamp(24px, 5vw, 36px);
   }
   .vacio-card-title {
-    font-size: clamp(56px, 12vw, 88px);
+    font-size: clamp(24px, 4vw, 32px);
   }
 }
 
@@ -1420,13 +1680,13 @@ body.is-grabbing .vacio-pill {
   }
   .vacio-card {
     flex: 0 0 auto;
-    min-height: 70vh;
+    min-height: 60vh;
   }
   .vacio-card-head {
     padding: 24px;
   }
   .vacio-card-title {
-    font-size: clamp(52px, 14vw, 72px);
+    font-size: clamp(22px, 6vw, 28px);
   }
   .vacio-pill {
     padding: 10px 18px;
@@ -2455,6 +2715,15 @@ body.is-grabbing .vacio-pill {
   position: relative;
 }
 
+/* Variante "wide" (Sobre Kokoro). El body en Figma 151:200 mide 751px;
+   con cuatro tabs (Por qué / Misión / Visión / Valores) y cuerpos más
+   largos, el aire extra evita que el cuerpo más alto haga crecer la
+   sección más de 100vh y desbarate el centrado vertical. Roadmap se
+   queda con el 672 default porque sus cuerpos son cortos. */
+.sobre-body-stack.is-wide {
+  width: 751px;
+}
+
 /* Body Mona Sans 28px tracking -0.84px line 1.4 ancho 672px.
    grid-area 1/1 apila todos los párrafos en la misma celda; el activo
    se ve y los inactivos quedan invisibles pero ocupando espacio. */
@@ -2505,7 +2774,8 @@ body.is-grabbing .vacio-pill {
   .sobre-tab {
     font-size: clamp(16px, 4vw, 20px);
   }
-  .sobre-body-stack {
+  .sobre-body-stack,
+  .sobre-body-stack.is-wide {
     width: 100%;
   }
   .sobre-body {
@@ -2628,6 +2898,80 @@ body.is-grabbing .vacio-pill {
 }
 
 /* ==========================================================================
+   Solución (Figma 159:318) — variante de `.intro-dual`
+   --------------------------------------------------------------------------
+   El lado derecho (`.intro-dual-body`) es una lista vertical de 3 ítems.
+   Cada ítem lleva eyebrow IBM Plex Mono + body Mona Sans 24px con padding
+   asimétrico (px-32 py-24) que replica el espaciado del Figma 159:337.
+   No hay líneas separadoras: la jerarquía se construye con padding y
+   tipografía. */
+.solucion-list {
+  gap: 0;
+}
+
+.solucion-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 32px;
+  align-items: flex-start;
+}
+
+.solucion-item-body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: clamp(18px, 1.8vw, 24px);
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  font-feature-settings: 'ordn' 1, 'ss01' 1, 'ss02' 1, 'ss03' 1, 'ss04' 1,
+    'ss05' 1, 'dlig' 1;
+}
+
+@media (max-width: 900px) {
+  .solucion-item {
+    padding: 16px 0;
+  }
+  .solucion-item-body {
+    font-size: clamp(18px, 4.6vw, 22px);
+  }
+}
+
+/* ==========================================================================
+   Motor de escala — variante `.kk-rule-block-lg` (Figma 137:100)
+   --------------------------------------------------------------------------
+   Misma estructura que `.kk-rule-block` pero con padding vertical más
+   generoso (py-64) y body 24px (vs 18px del problema). Comparte el
+   border-top/bottom y los separadores verticales del rule-block original.
+*/
+.kk-rule-block-lg .kk-rule-cell {
+  padding: clamp(48px, 6vw, 64px) clamp(20px, 2.4vw, 32px);
+  gap: 24px;
+}
+
+.motor-cell-body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: clamp(18px, 1.8vw, 24px);
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  text-align: center;
+  color: var(--ink);
+  max-width: 380px;
+  font-feature-settings: 'ordn' 1, 'ss01' 1, 'ss02' 1, 'ss03' 1, 'ss04' 1,
+    'ss05' 1, 'dlig' 1;
+}
+
+@media (max-width: 900px) {
+  .motor-cell-body {
+    font-size: clamp(18px, 4.6vw, 22px);
+    max-width: 100%;
+  }
+}
+
+/* ==========================================================================
    Nuestra ventaja — versión rows con HR (Figma 151:131)
    --------------------------------------------------------------------------
    Título grande a la izquierda + filas con divider horizontal: cada
@@ -2702,5 +3046,69 @@ body.is-grabbing .vacio-pill {
     width: 100%;
     text-align: left;
     font-size: 17px;
+  }
+}
+
+/* ==========================================================================
+   Tipografía móvil unificada — alineada con Figma 170:48 / 170:124 / 170:296
+   --------------------------------------------------------------------------
+   En móvil todos los títulos grandes (Host Grotesk display) bajan a ~60px y
+   los bodies grandes a 20px, según los frames móviles del Figma. Mantenemos
+   los `clamp` originales para que la transición sea suave entre breakpoints
+   pero ajustamos el techo al valor del Figma móvil.
+   - kk-title / kk-title-xl: 120 desktop → 60 móvil
+   - intro-dual-title: 120 desktop → 60 móvil (Qué es, MVP)
+   - inner-title (hero interno): 120 desktop → 60 móvil
+   - sobre-title (Sobre Kokoro, Roadmap): 120 desktop → 60 móvil
+   - vacio-display-title (Situación actual): 120 desktop → 60 móvil
+   - caja-title (Proyección financiera): 120 desktop → 60 móvil
+   - ventaja-title: 120 desktop → 60 móvil
+   - bodies grandes (intro-dual-para, solucion-item-body, motor-cell-body):
+     28/24 desktop → 20 móvil
+   - inner-lead: 20 desktop → 16 móvil (Figma 170:160 / 170:300)
+*/
+@media (max-width: 720px) {
+  .intro-dual-title,
+  .sobre-title,
+  .vacio-display-title,
+  .ventaja-title,
+  .caja-title,
+  .kk-title,
+  .kk-title-xl {
+    font-size: 60px;
+    letter-spacing: -2.4px;
+  }
+  .inner-title {
+    font-size: 60px;
+    letter-spacing: -3px;
+  }
+  .inner-lead {
+    font-size: 16px;
+  }
+  .intro-dual-para,
+  .solucion-item-body,
+  .motor-cell-body {
+    font-size: 20px;
+    letter-spacing: -0.6px;
+  }
+  .vacio-display-body {
+    font-size: 20px;
+    letter-spacing: -0.6px;
+  }
+  .ventaja-row-title {
+    font-size: 24px;
+  }
+  .ventaja-row-body {
+    font-size: 20px;
+  }
+}
+
+/* Apilamos también el header de Solución (título + lista) en móvil — el
+   patrón intro-dual ya colapsa a columna en ≤900px, pero la lista interna
+   pierde el padding lateral y los ítems quedan pegados al borde, lo que
+   en móvil queda mejor que el px-32 desktop. */
+@media (max-width: 900px) {
+  .solucion-list {
+    gap: 24px;
   }
 }

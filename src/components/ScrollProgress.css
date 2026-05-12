@@ -2,13 +2,27 @@
    ScrollProgress — barra horizontal fija al pie del documento
    ========================================================================== */
 
+/* Versión actual (v2): la barra de progreso va PEGADA al borde inferior
+   del viewport y la SectionIndicator se apila JUSTO ENCIMA usando
+   `--scroll-progress-h`. Antes era al revés (progress sobre indicator),
+   pero al diseñador le interesa ver el strip de secciones como base y
+   la barra de progreso como capa fina debajo, casi un underline del UI.
+
+   Exponemos la altura como CSS var para que SectionIndicator (que se
+   apoya en nosotros) pueda usarla. Vive en :root para que la regla
+   inversa también funcione: si en algún momento volvemos a poner la
+   indicator abajo, basta intercambiar `bottom:` en los dos archivos. */
+:root {
+  --scroll-progress-h: 4px;
+}
+
 .scroll-progress {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   width: 100%;
-  height: 4px;
+  height: var(--scroll-progress-h);
   background: var(--border);
   overflow: hidden;
   z-index: 28;

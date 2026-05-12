@@ -63,8 +63,30 @@ const fade = {
 /* ----------------------------- HERO (Figma 104:488) -------------- */
 /* Patrón Figma: KOKORO Host Grotesk 250px tracking -12.5px line 0.8
    centrado vertical + horizontal. Cue inferior: "más información"
-   IBM Plex Mono 16px uppercase + icono arrow_downward 24px debajo. */
+   IBM Plex Mono 16px uppercase + icono arrow_downward 24px debajo.
+   El cue es un botón clicable que baja a la primera sección con smooth
+   scroll (Lenis si está disponible, fallback nativo) — además de la
+   pista visual es un atajo real para usuarios que no entienden que la
+   página avanza con la rueda. */
 export function Hero() {
+  const goToFirstSection = () => {
+    /* `#que-es` es la primera sección después del Hero en HomePage.
+       En otras rutas (Modelo/MVP) Hero no se monta, así que esto sólo
+       corre en la home. Si por lo que sea el id no existe, caemos
+       limpiamente a un scroll de "una pantalla hacia abajo". */
+    const target = document.getElementById('que-es');
+    const lenis = typeof window !== 'undefined' ? window.__lenis : null;
+    if (target && lenis && typeof lenis.scrollTo === 'function') {
+      lenis.scrollTo(target, { duration: 1.2 });
+      return;
+    }
+    if (target && typeof target.scrollIntoView === 'function') {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+  };
+
   return (
     <section id="hero" className="section hero" data-slide>
       <motion.h1
@@ -76,8 +98,11 @@ export function Hero() {
         {brand.name}
       </motion.h1>
 
-      <motion.div
+      <motion.button
+        type="button"
         className="hero-cue"
+        onClick={goToFirstSection}
+        aria-label="Ir a la primera sección"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, delay: 1.2 }}
@@ -86,7 +111,7 @@ export function Hero() {
         <span className="hero-cue-arrow" aria-hidden="true">
           <ArrowDownward size={24} />
         </span>
-      </motion.div>
+      </motion.button>
     </section>
   );
 }
@@ -181,9 +206,21 @@ export function Resumen() {
       automático de ancho — el tab activo es italic serif y mide
       distinto que los inactivos en sans). */
 
-function TabbedReveal({ id, titleLines, tabs, layoutId, anchor = 'stack' }) {
+function TabbedReveal({
+  id,
+  titleLines,
+  tabs,
+  layoutId,
+  anchor = 'stack',
+  wide = false,
+}) {
   const [active, setActive] = useState(0);
   const isSplit = anchor === 'split';
+  /* `wide` ensancha el contenedor del cuerpo a 751 (vs 672 por defecto).
+     Sobre Kokoro lo usa para que las cuatro tabs (Por qué / Misión /
+     Visión / Valores) tengan más aire y el módulo se centre verticalmente
+     como Roadmap — coincide con el body 751px del Figma 151:192. */
+  const wideModifier = wide ? ' is-wide' : '';
 
   /* Bloque tabs + cuerpos. Se renderiza tal cual en anchor='stack'
      (Roadmap) o envuelto en .sobre-group cuando anchor='split'
@@ -225,8 +262,9 @@ function TabbedReveal({ id, titleLines, tabs, layoutId, anchor = 'stack' }) {
       {/* Stack de cuerpos: todos viven en la misma celda del grid (.sobre-
           body-stack). El contenedor toma la altura del cuerpo más largo
           y el resto se mantiene invisible pero ocupando espacio, por lo
-          que el título y las pestañas no se mueven al cambiar de tab. */}
-      <div className="sobre-body-stack">
+          que el título y las pestañas no se mueven al cambiar de tab.
+          `is-wide` lo lleva de 672 a 751 (Figma 151:192) para Sobre Kokoro. */}
+      <div className={`sobre-body-stack${wideModifier}`}>
         {tabs.map((t, i) => (
           <SobreBody key={t.key} tab={t} isActive={i === active} />
         ))}
@@ -310,13 +348,16 @@ function SobreBody({ tab, isActive }) {
 }
 
 export function SobreKokoro() {
+  /* `wide` ensancha el body a 751px (Figma 151:192) — sólo en Sobre Kokoro
+     para que las pestañas tengan más aire y el módulo quepa vertical-
+     mente centrado como Roadmap. Roadmap mantiene el ancho 672 default. */
   return (
     <TabbedReveal
       id="sobre-kokoro"
       titleLines={sobreKokoro.title}
       tabs={sobreKokoro.tabs}
       layoutId="sobre-kokoro-indicator"
-      anchor="split"
+      wide
     />
   );
 }
@@ -697,15 +738,26 @@ function MVVBody({ text, active }) {
   );
 }
 
-/* ----------------- EQUIPO (Figma 104:1032 / 152:220) ------------- */
-/* Header a 2 columnas: título "Equipo" Host 120px a la izquierda
-   (ancho 361) + intro Mona Sans 24px alineada a la derecha (flex-1).
-   Gap 156 entre columnas. Debajo, grid de 3 cards glass con foto
-   (cada card: nombre + cargo top-row mono uppercase 14px, foto al
-   fondo, bg rgba(255,255,255,0.05), rounded 24). */
+/* ----------------- EQUIPO (Figma 162:3) -------------------------- */
+/* Rediseño completo del módulo (mayo 2026):
+   - Header a 2 columnas: título "Equipo" Host 120px a la izquierda
+     (ancho 361 en desktop) + intro Mona Sans 20px alineada a la derecha.
+     El tramo "soñamos, diseñamos y ejecutamos Kokoro Foods día a día"
+     va en Instrument Serif Regular (NO itálica) para crear contraste
+     dentro del párrafo (Figma 162:7).
+   - Bajo el header, una "tira" de fotos en B/N pegadas al borde inferior
+     de la sección. Cada foto tiene una pill flotante con el nombre + un
+     enlace a LinkedIn. La pill usa backdrop-blur 125 + bg/border glass
+     y queda anclada en una esquina concreta de cada foto (Figma 162:32):
+       · Iván:    pill arriba-izquierda
+       · Candela: pill arriba-centrada
+       · Olga:    pill arriba-derecha
+   - Hover en la pill: el color se intensifica + la foto correspondiente
+     se aclara un toque. Active: la pill se hunde 1px. Focus visible
+     accesible con outline en --ink. */
 export function Equipo() {
   return (
-    <section id="equipo" className="section" data-slide>
+    <section id="equipo" className="section section-equipo" data-slide>
       <div className="equipo-stack">
         <div className="equipo-header">
           <h2 className="equipo-header-title">
@@ -721,60 +773,67 @@ export function Equipo() {
             whileInView="show"
             viewport={{ once: true, margin: '-15% 0px' }}
           >
-            {equipo.intro}
+            {equipo.introLead}
+            <span className="equipo-header-intro-emph">{equipo.introEmph}</span>
+            {equipo.introTail}
           </motion.p>
         </div>
 
-        <div className="team-grid">
-          {equipo.members.map((m, i) => {
-            const initials = m.name
-              .split(' ')
-              .map((w) => w[0])
-              .join('')
-              .slice(0, 2)
-              .toUpperCase();
-            return (
-              <motion.div
-                key={m.name}
-                className="team-card"
-                variants={fade}
-                custom={i}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, margin: '-10% 0px' }}
-                tabIndex={0}
-                aria-label={`${m.name}, ${m.role}`}
-              >
-                <div className="team-card-header">
-                  <span className="team-card-name">{m.name}</span>
-                  <span className="team-card-role">{m.role}</span>
-                </div>
-                <div className="team-card-photo" aria-hidden="true">
-                  {/* Placeholder con iniciales si la imagen no carga */}
-                  <span className="team-card-fallback">{initials}</span>
-                  {m.photo && (
-                    <img
-                      src={m.photo}
-                      alt=""
-                      loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  )}
-                </div>
-                {/* Overlay con bio — fade-in al hover/focus */}
-                {m.bio && (
-                  <div className="team-card-overlay">
-                    <p className="team-card-bio">{m.bio}</p>
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
+        <div className="equipo-stage" aria-label="Miembros del equipo">
+          {equipo.members.map((m, i) => (
+            <TeamMember key={m.name} member={m} index={i} />
+          ))}
         </div>
       </div>
     </section>
+  );
+}
+
+/* TeamMember — calca exacta del Figma 162:30 / 162:24 / 162:31:
+   - No hay contenedor / caja detrás de la imagen: el cutout (PNG/webp con
+     alpha) se renderiza directo sobre el fondo de la sección.
+     - Iván (is-left)   → flex item anclado al borde izquierdo, z-index bajo
+     - Olga (is-right)  → flex item anclado al borde derecho, z-index bajo
+     - Candela (center) → absolute, centrada horizontalmente y POR DELANTE
+       (z-index alto). Se superpone a Iván y Olga: calca Figma 162:24, que
+       está absoluto sobre el row 162:32.
+   - Cada pill se ancla a la coordenada relativa que indica el Figma
+     respecto a su foto (ver porcentajes en sections.css). */
+function TeamMember({ member, index }) {
+  const variantClass = ['is-left', 'is-center', 'is-right'][index] || 'is-left';
+
+  return (
+    <motion.figure
+      className={`equipo-member ${variantClass}`}
+      variants={fade}
+      custom={index}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: '-10% 0px' }}
+    >
+      <img
+        className="equipo-member-img"
+        src={member.photo}
+        alt=""
+        loading="lazy"
+        draggable="false"
+      />
+      <figcaption className="equipo-member-caption">
+        <a
+          className="equipo-member-pill"
+          href={member.linkedin}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${member.name} — ${member.role} · abrir perfil de LinkedIn en una pestaña nueva`}
+        >
+          <span className="equipo-member-name">{member.name}</span>
+          {/* Flecha diagonal que asoma al hover/focus — afordancia visual de
+              que la pill es un enlace externo (LinkedIn). aria-hidden porque
+              el aria-label del <a> ya describe el destino. */}
+          <span className="equipo-member-pill-arrow" aria-hidden="true">↗</span>
+        </a>
+      </figcaption>
+    </motion.figure>
   );
 }
 
@@ -1120,11 +1179,16 @@ export function Contacto({ num = '03' }) {
    Patrón: pill eyebrow blanca bordeada centrada · título Host 120px ·
    lead 20px centrado max 764px line 1.5. */
 export function InnerHero({
-  eyebrow = 'Mínimo producto viable',
+  eyebrow,
   title = 'Punto de partida',
   lead,
   id = 'inner-hero',
 }) {
+  /* Pill eliminada en mayo 2026 para alinear con Figma 104:425 (Modelo) y
+     104:516 (MVP) — ambos heroes muestran sólo título centrado + lead. La
+     prop `eyebrow` se mantiene por compatibilidad: si llega un valor
+     truthy, volvemos a renderizar la pill (útil si en otra ruta se quiere
+     reactivar). El default es undefined → sin pill. */
   return (
     <section
       id={id}
@@ -1138,7 +1202,7 @@ export function InnerHero({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         >
-          <span className="inner-pill">{eyebrow}</span>
+          {eyebrow ? <span className="inner-pill">{eyebrow}</span> : null}
           <RevealText as="h1" className="inner-title">
             {title}
           </RevealText>
@@ -1598,111 +1662,131 @@ const PhysicsPile = forwardRef(function PhysicsPile(
    IMPORTANTE: la lógica del PhysicsPile (interacción + animaciones de
    las pills) NO se toca — sólo cambian los contenedores. */
 export function VacioMercado() {
-  const { left, right } = negocio.vacio;
+  const { left, right, displayTitle, displayBody } = negocio.vacio;
   const leftPileRef = useRef(null);
   const rightPileRef = useRef(null);
 
   return (
     <section id="vacio" className="section section-vacio" data-slide>
-      <div
-        className="vacio-split"
-        aria-label="Comparación visual entre puntos de dolor (Pains) y beneficios (Gains)"
-      >
-        <div className="vacio-card">
-          <motion.div
-            className="vacio-card-head"
+      {/* Frame columna: header (título + body) arriba, cards Pains/Gains
+          ocupando el resto del espacio vertical (flex: 1). Figma 104:872. */}
+      <div className="vacio-frame">
+        <header className="vacio-header">
+          <h2 className="vacio-display-title">
+            {displayTitle.map((line, i) => (
+              <RevealText
+                key={line}
+                as="span"
+                className="vacio-display-line"
+                delay={i * 0.08}
+              >
+                {line}
+              </RevealText>
+            ))}
+          </h2>
+          <motion.p
+            className="vacio-display-body"
             variants={fade}
+            custom={1}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: '-15% 0px' }}
           >
-            <RevealText as="h2" className="vacio-card-title">
-              Pains
-            </RevealText>
-          </motion.div>
-          <PhysicsPile
-            ref={leftPileRef}
-            mirrorRef={rightPileRef}
-            phrases={left}
-            variant="dark"
-          />
-        </div>
+            {displayBody}
+          </motion.p>
+        </header>
 
-        <div className="vacio-card">
-          <motion.div
-            className="vacio-card-head"
-            variants={fade}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-15% 0px' }}
-          >
-            <RevealText as="h2" className="vacio-card-title">
-              Gains
-            </RevealText>
-          </motion.div>
-          <PhysicsPile
-            ref={rightPileRef}
-            mirrorRef={leftPileRef}
-            phrases={right}
-            variant="light"
-          />
+        <div
+          className="vacio-split"
+          aria-label="Comparación visual entre puntos de dolor (Pains) y beneficios (Gains)"
+        >
+          <div className="vacio-card">
+            <motion.div
+              className="vacio-card-head"
+              variants={fade}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: '-15% 0px' }}
+            >
+              <RevealText as="h3" className="vacio-card-title">
+                Pains
+              </RevealText>
+            </motion.div>
+            <PhysicsPile
+              ref={leftPileRef}
+              mirrorRef={rightPileRef}
+              phrases={left}
+              variant="dark"
+            />
+          </div>
+
+          <div className="vacio-card">
+            <motion.div
+              className="vacio-card-head"
+              variants={fade}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: '-15% 0px' }}
+            >
+              <RevealText as="h3" className="vacio-card-title">
+                Gains
+              </RevealText>
+            </motion.div>
+            <PhysicsPile
+              ref={rightPileRef}
+              mirrorRef={leftPileRef}
+              phrases={right}
+              variant="light"
+            />
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-/* La solución disruptiva (137:194) — header centrado + 3 cells icon + eyebrow + body.
-   Cada celda añade un icono 24px arriba (Repeat, Tag, Intersect). */
+/* Solución (Figma 159:318) — título Host 120px alineado a la IZQUIERDA +
+   stack vertical de 3 ítems a la derecha. Cada ítem: eyebrow IBM Plex Mono
+   uppercase 14px + body Mona Sans 24px tracking -0.72px line 1.4.
+   Sin iconos, sin lineas separadoras horizontales — la jerarquía se
+   construye sólo con la tipografía y el padding interno (px-32 py-24).
+   Reusa el contenedor `.intro-dual` (mismo layout que "Qué es") con la
+   nueva clase `.solucion-list` para los 3 ítems del lado derecho. */
 export function SolucionDisruptiva() {
   return (
     <section id="solucion" className="section" data-slide>
-      <div className="kk-stack kk-stack-64">
+      <div className="intro-dual">
+        <h2 className="intro-dual-title">
+          <RevealText as="span" className="intro-dual-title-line">
+            {negocio.solucion.title}
+          </RevealText>
+        </h2>
         <motion.div
-          className="kk-header kk-header-center"
+          className="intro-dual-body solucion-list"
           variants={fade}
+          custom={1}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: '-15% 0px' }}
         >
-          <span className="kk-eyebrow">{negocio.solucion.eyebrow}</span>
-          <RevealText as="h2" className="kk-title kk-title-center">
-            {negocio.solucion.title}
-          </RevealText>
+          {negocio.solucion.cells.map((c) => (
+            <div key={c.eyebrow} className="solucion-item">
+              <span className="kk-eyebrow">{c.eyebrow}</span>
+              <p className="solucion-item-body">{c.body}</p>
+            </div>
+          ))}
         </motion.div>
-
-        <div className="kk-rule-block">
-          {negocio.solucion.cells.map((c, i) => {
-            const Icon = SOLUCION_ICONS[c.icon];
-            return (
-              <motion.div
-                key={c.eyebrow}
-                className="kk-rule-cell kk-rule-cell-icon"
-                variants={fade}
-                custom={i}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, margin: '-15% 0px' }}
-              >
-                {Icon && (
-                  <span className="kk-rule-cell-glyph" aria-hidden="true">
-                    <Icon size={24} />
-                  </span>
-                )}
-                <span className="kk-eyebrow">{c.eyebrow}</span>
-                <p className="kk-body kk-body-center">{c.body}</p>
-              </motion.div>
-            );
-          })}
-        </div>
       </div>
     </section>
   );
 }
 
-/* Modelo de negocio (Figma 137:117) — header centrado + 3 cards glass
-   iguales en una fila. Cada card: eyebrow mono uppercase + body Mona
-   Sans 18px centrado. Sin asimetrías: las tres comparten misma altura. */
+/* Modelo de negocio (Figma 137:100) — título Host 120px centrado +
+   bloque border-y #222 con 3 columnas separadas por línea vertical
+   fina. Cada columna: eyebrow IBM Plex Mono uppercase 14px + body Mona
+   Sans 24px CENTRADO. Sin glass cards: el rule-block es el contenedor.
+   Reusa `.kk-rule-block` / `.kk-rule-cell` (mismo patrón que Problema
+   pero con 3 cells de body 24px en vez de 18px). */
 export function MotorEscala() {
   const { title, main, side } = negocio.revenue;
   const cards = [main, ...side];
@@ -1721,11 +1805,11 @@ export function MotorEscala() {
           </RevealText>
         </motion.div>
 
-        <div className="motor-grid-3">
+        <div className="kk-rule-block kk-rule-block-lg">
           {cards.map((c, i) => (
             <motion.div
               key={c.eyebrow}
-              className="motor-card-3"
+              className="kk-rule-cell"
               variants={fade}
               custom={i}
               initial="hidden"
@@ -1733,7 +1817,7 @@ export function MotorEscala() {
               viewport={{ once: true, margin: '-15% 0px' }}
             >
               <span className="kk-eyebrow">{c.eyebrow}</span>
-              <p className="kk-body kk-body-center">{c.body}</p>
+              <p className="motor-cell-body">{c.body}</p>
             </motion.div>
           ))}
         </div>

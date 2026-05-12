@@ -1,0 +1,188 @@
+/* ==========================================================================
+   SectionIndicator — barra de secciones anclada al pie del viewport
+   Figma 157:223 (v3). Pegada a bottom: 0 — la scroll-progress horizontal
+   se ha retirado del shell, así que ya no hay nada apilado entre el
+   strip y el borde inferior del viewport.
+   --------------------------------------------------------------------------
+   Cambios v2 → v3 según Figma:
+   - Items ahora son grupos icono + label (gap 8px) en vez de sólo texto.
+   - Sin separadores entre items: aire puro con `gap: 48px` fijo.
+   - Sin inner container con max-width centrado: padding lateral 128px y
+     los items se agrupan a la izquierda (default flex-start).
+   - Active label: Instrument Serif Regular (NO itálica), no Mona Sans.
+   - Inactive label/icon: rgba(255,255,255,0.2) (antes 0.3).
+   - Padding vertical 16px (antes clamp 16-32) → strip más fino.
+
+   Items 16px tracking -0.03em. Background rgba(255,255,255,0.01) con
+   backdrop-blur 100px sigue dando ese glass-morphism casi invisible.
+
+   Altura calculada en CSS (no JS): padding vertical * 2 + altura de
+   contenido (16px × 1.4 line-height = 22.4px) + 1px del border-top
+   blanco al 5%. Esta var alimenta a las secciones que reservan
+   padding-bottom para no quedar tapadas por el strip (p.ej. Equipo). */
+:root {
+  --section-indicator-pad-y: 16px;
+  --section-indicator-border-t: 1px;
+  --section-indicator-h: calc(
+    var(--section-indicator-pad-y) * 2 + 22.4px + var(--section-indicator-border-t)
+  );
+}
+
+@media (max-width: 720px) {
+  :root {
+    --section-indicator-pad-y: 12px;
+    /* Móvil: font-size 13px × line-height 1.4 = 18.2px + padding + border. */
+    --section-indicator-h: calc(
+      var(--section-indicator-pad-y) * 2 + 18.2px + var(--section-indicator-border-t)
+    );
+  }
+}
+
+.section-indicator {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 27;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  padding: var(--section-indicator-pad-y) clamp(20px, 9vw, 128px);
+  background: rgba(255, 255, 255, 0.01);
+  /* Filete blanco al 5% que separa el strip del contenido de arriba.
+     Aporta una línea de "horizonte" muy sutil sobre la sección, similar
+     al border que llevan las pills. La altura de este 1px ya está
+     contemplada en --section-indicator-h (ver :root arriba). */
+  border-top: var(--section-indicator-border-t) solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(100px);
+  -webkit-backdrop-filter: blur(100px);
+  box-sizing: border-box;
+  /* Si el navegador no soporta backdrop-filter, un fondo apenas perceptible
+     para que el texto siga siendo legible sobre cualquier sección. */
+
+  /* Estado de visibilidad. Mientras el visitante está "en el hero" el strip
+     se desliza fuera de pantalla (translateY 100%) y la barra de progreso
+     baja con él vía la clase `section-indicator-hidden` que ponemos en
+     <body>. Al entrar la primera sección de contenido, ambos suben en
+     sincronía. */
+  transform: translateY(100%);
+  transition: transform 0.45s var(--easing);
+  will-change: transform;
+}
+
+.section-indicator.is-visible {
+  transform: translateY(0);
+}
+
+/* Cuando el strip está oculto (typically en el hero), anulamos su altura
+   para que cualquier sección que reserve padding-bottom basándose en
+   `--section-indicator-h` (p.ej. Equipo) lo recalcule sin contar el
+   strip. La scroll-progress ya no depende de esta variable —vive a
+   bottom:0 fijo— pero seguimos colapsando la var por consistencia con
+   secciones que sí la consultan. */
+body.section-indicator-hidden {
+  --section-indicator-h: 0px;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .section-indicator {
+    background: rgba(11, 11, 11, 0.6);
+  }
+}
+
+/* Cada item: reset de botón nativo + flex inline icon+label con gap 8px.
+   El color del item gobierna tanto al label como al icono (currentColor
+   en SVG). Inactivo: 20% blanco. Activo: --ink (white o 0b0b0b según
+   theme). Transición suave en color y opacidad. */
+.section-indicator-item {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.35s var(--easing), opacity 0.35s var(--easing);
+}
+
+.section-indicator-item:hover {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.section-indicator-item.is-active,
+.section-indicator-item.is-active:hover {
+  color: var(--ink);
+}
+
+.section-indicator-item:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+/* Icono: hereda color del padre via currentColor (set on SVG paths).
+   shrink: 0 para que el icono no se comprima si el label es largo. */
+.section-indicator-icon {
+  flex-shrink: 0;
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+/* Label: Mona Sans 16px tracking -0.03em — misma fuente para todos los
+   estados (Figma v4: 162:2 / 158:243 / 158:251 todos Mona Sans). La
+   diferencia entre activo e inactivo es sólo el color, no la tipografía
+   — antes (v3) el activo era Instrument Serif pero generaba un salto
+   de anchura al cambiar de tab. */
+.section-indicator-label {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  font-feature-settings: 'ordn' 1, 'ss01' 1, 'ss02' 1, 'ss03' 1, 'ss04' 1,
+    'ss05' 1, 'dlig' 1;
+}
+
+/* Light theme: invertimos el ink y los inactivos pasan a tinta oscura
+   a 20%. El fondo glass-morphism se queda neutro porque el blur ya
+   absorbe el color de detrás. El border-top blanco al 5% sería casi
+   invisible sobre cream — lo flipeamos a tinta oscura al 8% para
+   mantener la misma sensación de "línea de horizonte" muy sutil. */
+:root[data-theme='light'] .section-indicator {
+  background: rgba(11, 11, 11, 0.01);
+  border-top-color: rgba(11, 11, 11, 0.08);
+}
+:root[data-theme='light'] .section-indicator-item {
+  color: rgba(11, 11, 11, 0.2);
+}
+:root[data-theme='light'] .section-indicator-item:hover {
+  color: rgba(11, 11, 11, 0.6);
+}
+:root[data-theme='light'] .section-indicator-item.is-active,
+:root[data-theme='light'] .section-indicator-item.is-active:hover {
+  color: var(--ink);
+}
+
+/* Móvil / táctil (≤ 1024px): el strip horizontal del pie se oculta por
+   completo. Decisión de UX (mayo 2026): en pantallas pequeñas el slider
+   competía con el contenido del módulo activo y el scroll nativo ya da
+   suficiente sensación de progreso. Anulamos también la variable de
+   altura para que ninguna sección reserve padding-bottom innecesario. */
+@media (max-width: 1024px) {
+  :root {
+    --section-indicator-h: 0px;
+  }
+  .section-indicator {
+    display: none !important;
+  }
+}
+
+/* prefers-reduced-motion ya tiene un override global que neutraliza
+   transitions, así que el cambio de color es instantáneo en ese modo. */

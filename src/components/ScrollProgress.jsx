@@ -3,11 +3,9 @@ import './ScrollProgress.css';
 
 /**
  * Barra horizontal que indica el progreso de scroll del documento.
- * Vive justo debajo del TopBar dentro del mismo wrap fijo. Cuando el wrap
- * se traslada hacia arriba para ocultar el navbar, la barra de progreso se
- * queda visible al borde superior del viewport (porque el wrap se mueve
- * exactamente la altura del navbar — la altura de esta barra queda dentro
- * del viewport).
+ * Vive PEGADA al pie del viewport (bottom: 0, height 4px) — versión v2:
+ * antes estaba apilada sobre la SectionIndicator, ahora la indicator se
+ * desplaza para quedar JUSTO ENCIMA usando `--scroll-progress-h`.
  *
  * El relleno se anima vía transform: scaleX para evitar reflows.
  */

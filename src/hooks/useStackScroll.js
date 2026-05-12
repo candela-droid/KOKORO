@@ -1,5 +1,10 @@
 import { useEffect } from 'react';
 
+/* Breakpoint compartido con useLenis y los overrides CSS de móvil.
+   Por debajo de 1024px desactivamos el stack-scroll y dejamos que las
+   secciones fluyan en scroll nativo, una debajo de otra. */
+const MOBILE_QUERY = '(max-width: 1024px)';
+
 /**
  * Stack-scroll: anima cada sección dentro de `.section-stack` mientras la
  * SIGUIENTE sección sube y la cubre.
@@ -13,10 +18,24 @@ import { useEffect } from 'react';
  * Progreso (0..1) de "leave" para cada sección = cuánto ha entrado la
  * siguiente sección al viewport. 0 = la siguiente aún está fuera (o tocando
  * el borde inferior); 1 = la siguiente ha alcanzado el top:0.
+ *
+ * En móvil (≤ 1024px) el hook no se engancha al scroll: el CSS responsive
+ * neutraliza sticky + rail y las secciones se apilan en flujo normal sin
+ * scale/brightness aplicado.
  */
 export default function useStackScroll() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (window.matchMedia && window.matchMedia(MOBILE_QUERY).matches) {
+      // Móvil: nos aseguramos de limpiar cualquier var que se hubiera
+      // colado por un cambio de breakpoint y salimos sin engancharnos.
+      const sections = document.querySelectorAll('.section-stack > .section');
+      sections.forEach((s) => {
+        s.style.removeProperty('--ss-scale');
+        s.style.removeProperty('--ss-brightness');
+      });
+      return;
+    }
 
     let raf = null;
     let lastY = -1;

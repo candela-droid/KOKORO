@@ -149,28 +149,16 @@ body {
 }
 
 /* ==========================================================================
-   Ocultar scrollbar nativa (el progress global la sustituye visualmente).
-   El scroll sigue funcionando en rueda, trackpad, teclado y touch.
+   Scrollbar nativa (vertical clásica del navegador) — visible.
+   --------------------------------------------------------------------------
+   Antes la ocultábamos porque la barra horizontal `.scroll-progress` hacía
+   las veces de indicador. Ahora hemos retirado ese componente y dejamos
+   que el navegador pinte su scrollbar nativa de toda la vida en html/body.
+   No hace falta ninguna regla — el comportamiento por defecto es justo
+   lo que queremos. Mantenemos esta sección documentada para que se vea
+   intencionado (no un olvido) y para encontrarla rápido si en algún
+   momento volvemos a esconderla.
    ========================================================================== */
-html,
-body {
-  scrollbar-width: none;          /* Firefox */
-  -ms-overflow-style: none;       /* IE/Edge legacy */
-}
-html::-webkit-scrollbar,
-body::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;                  /* Chrome, Safari, Edge */
-}
-*::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
-}
-* {
-  scrollbar-width: none;
-}
 
 a {
   color: inherit;
@@ -482,42 +470,51 @@ svg {
      · 100vh..200vh — la siguiente se levanta y la cubre (TRANSITION)
    El rail (--section-rail) se puede ajustar para acortar/alargar el stop.
    ========================================================================== */
+/* STACK-SCROLL "presentación" (decisión UX, mayo 2026, segunda iteración):
+   Volvemos al patrón pinned + rail por feedback del cliente — el flujo
+   funciona como una presentación: cada sección se queda fija mientras se
+   "consume" su rail de 100vh, y luego la siguiente sube a tomar su lugar.
+
+   Diferencias con la primera versión:
+   - SIN border-top entre secciones (el cliente no quería los "strokes").
+   - SIN box-shadow (mismo motivo — limpio).
+   - El useStackScroll() sigue aplicando un scale + brightness sutil sobre
+     la sección saliente para reforzar la sensación de "empuje" sin
+     necesidad de strokes.
+
+   Lenis con smoothWheel: true (ver useLenis.js) suaviza el wheel para que
+   la transición pinned→rail→siguiente se sienta fluida en vez de stepped. */
 .section-stack {
   position: relative;
-  /* Rail ENTRE secciones — espacio en blanco que crea el "stop por módulo"
-     antes de que la siguiente empuje. */
-  --section-rail: 100vh;
-  /* Sin trailing rail: ya no hay footer que necesite "transición" desde la
-     última sección. La última sección ocupa exactamente sus 100vh y se
-     termina la página. */
+  /* Rail ENTRE secciones — espacio que la siguiente "consume" antes de
+     empujar a la actual.
+
+     Antes era 100vh: cada módulo requería 2 viewports de scroll (1 pineado
+     sin cambios + 1 de transición), demasiado para que se sienta fluido.
+     Ahora 40vh: cada módulo requiere ~1.4 viewports (40vh de "stop" para
+     leer + 100vh de slide hacia el siguiente). Si se sigue notando largo,
+     bajar a 20-25vh; si demasiado abrupto, subir a 60-70vh. */
+  --section-rail: 40vh;
 }
 
 .section-stack > .section {
   position: sticky;
   top: 0;
   background: var(--bg);
-  border-top: 1px solid var(--border-2);
-  box-shadow: var(--shadow-stack);
   will-change: transform, filter;
-  /* Variables animadas por useStackScroll en función del progreso de
-     "salida" (cuánto ha cubierto la siguiente sección a esta). */
+  /* Vars animadas por useStackScroll en función del progreso de "salida"
+     (cuánto ha cubierto la siguiente sección a esta). Defaults a 1 para
+     que sin el hook tampoco haya un transform aplicado. */
   transform: scale(var(--ss-scale, 1));
   filter: brightness(var(--ss-brightness, 1));
   transform-origin: 50% 0%;
 }
 
-/* RAIL — espacio en blanco entre secciones que da el "stop por módulo".
-   Cada sección a partir de la segunda lleva margin-top = --section-rail,
-   creando un gap en el flujo del documento donde la sección activa sigue
-   pinned (sticky) sin que la siguiente empiece todavía a entrar. */
+/* RAIL — cada sección a partir de la segunda lleva margin-top con el rail,
+   creando un hueco en el flujo del documento donde la sección actual sigue
+   pineada (sticky) mientras se "consume" el espacio. */
 .section-stack > .section + .section {
   margin-top: var(--section-rail);
-}
-
-/* La primera sección no necesita sombra/borde porque no se apila sobre nada. */
-.section-stack > .section:first-child {
-  border-top: none;
-  box-shadow: none;
 }
 
 /* Hero ya tenía position:relative en su regla específica — re-fijamos
@@ -533,9 +530,34 @@ svg {
   :root {
     --pad-y: 96px;
   }
-  /* Mantenemos 100vh también en mobile (requisito del cliente). */
+}
+
+/* ====== MÓVIL / TÁCTIL — scroll nativo, sin stack-scroll ======
+   Por debajo de 1024px desactivamos el patrón "presentación":
+   · sin position: sticky (las secciones fluyen una debajo de otra)
+   · sin rail entre secciones (no hay viewports vacíos de transición)
+   · sin transform/filter del useStackScroll (las vars quedan en 1)
+   · min-height: auto para que las secciones midan lo que necesite su
+     contenido — evita huecos enormes cuando hay poco contenido.
+   Esto se combina con useLenis y useStackScroll, que ya no se enganchan
+   en este breakpoint, y con SectionIndicator que se oculta también. */
+@media (max-width: 1024px) {
+  .section-stack {
+    --section-rail: 0px;
+  }
+  .section-stack > .section,
+  .section-stack > .section.hero {
+    position: relative;
+    top: auto;
+    transform: none;
+    filter: none;
+    will-change: auto;
+  }
+  .section-stack > .section + .section {
+    margin-top: 0;
+  }
   .section {
-    min-height: 100vh;
+    min-height: auto;
   }
 }
 

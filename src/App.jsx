@@ -2,7 +2,17 @@ import { useEffect, useMemo } from 'react';
 import useLenis from './hooks/useLenis.js';
 import useStackScroll from './hooks/useStackScroll.js';
 import TopBar from './components/TopBar.jsx';
-import ScrollProgress from './components/ScrollProgress.jsx';
+import SectionIndicator from './components/SectionIndicator.jsx';
+import {
+  SealQuestion,
+  Files,
+  UsersThree,
+  Globe,
+  Star,
+  Lifebuoy,
+  Trophy,
+  Receipt,
+} from './components/SectionIcons.jsx';
 import Cursor from './components/Cursor.jsx';
 import { RouterProvider, useRouter } from './router.jsx';
 import HomePage from './pages/HomePage.jsx';
@@ -13,6 +23,32 @@ const ROUTES = {
   '/': HomePage,
   '/modelo': ModeloPage,
   '/mvp': MvpPage,
+};
+
+/* Items por ruta para el SectionIndicator (Figma 157:223 v3). Excluímos
+   el hero porque en el strip se asume que el visitante ya está "dentro"
+   del documento. Los ids tienen que existir en los <section> de
+   Sections.jsx — coincide con los ids declarados allí. Cada item lleva
+   también su icono Phosphor 16px (ver SectionIcons.jsx). En las rutas
+   donde aún no hay icono específico (MVP, Roadmap) el item se renderiza
+   sólo con texto. */
+const SECTION_ITEMS_BY_ROUTE = {
+  '/': [
+    { id: 'que-es', label: 'Qué es', icon: SealQuestion },
+    { id: 'sobre-kokoro', label: 'Sobre Kokoro', icon: Files },
+    { id: 'equipo', label: 'Equipo', icon: UsersThree },
+  ],
+  '/modelo': [
+    { id: 'vacio', label: 'Vacío de mercado', icon: Globe },
+    { id: 'solucion', label: 'Solución', icon: Star },
+    { id: 'motor', label: 'Motor de escala', icon: Lifebuoy },
+    { id: 'ventaja', label: 'Ventaja', icon: Trophy },
+  ],
+  '/mvp': [
+    { id: 'mvp-intro', label: 'MVP' },
+    { id: 'caja', label: 'Proyección', icon: Receipt },
+    { id: 'roadmap', label: 'Roadmap' },
+  ],
 };
 
 function NotFound() {
@@ -35,6 +71,7 @@ function AppShell() {
   const { path } = useRouter();
 
   const Page = useMemo(() => ROUTES[path] || NotFound, [path]);
+  const sectionItems = SECTION_ITEMS_BY_ROUTE[path] || [];
 
   // Smooth scroll a un hash si llega directo (#contacto, #valores...).
   // Sólo aplica en first-load con hash; la navegación entre rutas usa el
@@ -58,7 +95,7 @@ function AppShell() {
         <Page />
       </main>
 
-      <ScrollProgress />
+      <SectionIndicator items={sectionItems} />
     </>
   );
 }

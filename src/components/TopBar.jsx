@@ -34,9 +34,16 @@ export default function TopBar() {
   const { theme, toggle } = useTheme();
 
   // Detección de scroll: scrolled (para fondo blur) + dirección (auto-hide).
+  // Además, un timer de inactividad (`idleTimer`): cualquier evento de scroll
+  // lo resetea, y si pasa SCROLL_IDLE_MS sin recibir ninguno consideramos
+  // que el usuario ha parado y volvemos a mostrar la barra. Así reaparece
+  // al detenerse aunque el último delta haya sido hacia abajo (deja de ser
+  // necesario hacer scroll-up explícito para verla).
   useEffect(() => {
+    const SCROLL_IDLE_MS = 180;
     let lastY = window.scrollY || 0;
     let raf = null;
+    let idleTimer = null;
 
     const update = () => {
       raf = null;
@@ -56,8 +63,14 @@ export default function TopBar() {
     };
 
     const onScroll = () => {
-      if (raf != null) return;
-      raf = requestAnimationFrame(update);
+      if (raf == null) raf = requestAnimationFrame(update);
+      // Reset del timer en cada evento de scroll. Cuando deje de dispararse,
+      // a los SCROLL_IDLE_MS revelamos la barra.
+      if (idleTimer != null) clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        idleTimer = null;
+        setHidden(false);
+      }, SCROLL_IDLE_MS);
     };
 
     update();
@@ -65,6 +78,7 @@ export default function TopBar() {
     return () => {
       window.removeEventListener('scroll', onScroll);
       if (raf != null) cancelAnimationFrame(raf);
+      if (idleTimer != null) clearTimeout(idleTimer);
     };
   }, []);
 
