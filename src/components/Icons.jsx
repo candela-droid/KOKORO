@@ -218,6 +218,59 @@ export function ChevronRight({ size = 20, className = '' }) {
   );
 }
 
+/* ChevronDown — usado en las tabs móviles de Sobre Kokoro y Roadmap
+   (Figma 170:435 / 170:362). El active tab lleva una flecha abajo de
+   16px que indica "está expandido"; los inactivos van con ChevronRight. */
+export function ChevronDown({ size = 16, className = '' }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        d="M6 9l6 6 6-6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/* ArrowForwardIos — variante con stroke fino estilo iOS (›). Mismo path
+   que ChevronRight pero con stroke 1.2 y trazo cerrado más estrecho —
+   coincide con el icono `arrow_forward_ios` del Figma usado en las tabs
+   móviles de Sobre Kokoro (170:454/456/462/467) y Roadmap (170:488). El
+   tab activo lleva este SVG con `transform: rotate(90deg)` aplicado por
+   CSS para que la punta mire hacia abajo; los inactivos van sin rotar. */
+export function ArrowForwardIos({ size = 16, className = '' }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        d="M9 6l6 6-6 6"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 /* Hamburger menu (3 líneas) — usado en TopBar móvil para abrir el drawer
    de navegación. Stroke 1.5px currentColor, square caps para coherencia
    con el resto del set (ArrowDownward, ArrowOutward). */

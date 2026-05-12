@@ -38,6 +38,7 @@ import RevealText from '../components/RevealText.jsx';
 import CountUp from '../components/CountUp.jsx';
 import {
   ArrowDownward,
+  ArrowForwardIos,
   ArrowOutward,
   ChevronLeft,
   ChevronRight,
@@ -59,6 +60,73 @@ const fade = {
     transition: { duration: 0.7, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] },
   }),
 };
+
+/* useScrollDots — hook helper para el patrón carrusel mobile (Figma
+   170:189 / 170:243 / 170:394). Recibe un ref a un contenedor con scroll
+   horizontal y devuelve el índice del item visible. La detección se hace
+   con scrollLeft / clientWidth + redondeo: cada "página" del carrusel mide
+   el ancho del viewport del contenedor, así que el ratio nos da el index.
+   Si el carrusel no está montado o está en desktop (no overflow) devuelve
+   siempre 0. */
+function useScrollDots(scrollerRef, itemCount) {
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return undefined;
+    let raf = null;
+    const update = () => {
+      raf = null;
+      // scrollLeft 0 → idx 0. scrollLeft = (count-1)*cardW → idx = count-1.
+      // Usamos getBoundingClientRect del primer hijo para el ancho real
+      // (incluye gap si scroll-padding-inline lo absorbe).
+      const first = el.firstElementChild;
+      if (!first) return;
+      const cardW = first.getBoundingClientRect().width;
+      const gap = parseFloat(getComputedStyle(el).columnGap || 0) || 0;
+      const step = cardW + gap || el.clientWidth;
+      const idx = Math.round(el.scrollLeft / step);
+      const clamped = Math.max(0, Math.min(itemCount - 1, idx));
+      setActiveIdx((prev) => (prev === clamped ? prev : clamped));
+    };
+    const onScroll = () => {
+      if (raf != null) return;
+      raf = requestAnimationFrame(update);
+    };
+    update();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (raf != null) cancelAnimationFrame(raf);
+    };
+  }, [scrollerRef, itemCount]);
+
+  return activeIdx;
+}
+
+/* MobileDots — paginación de 4px de alto y 39px de ancho por dot, con
+   gap de 8px. El activo va en blanco al 100%, los inactivos al 10%
+   (Figma 170:187 / 170:188). Sólo se ve a partir del breakpoint móvil. */
+function MobileDots({ count, active, onSelect }) {
+  if (count <= 1) return null;
+  return (
+    <div className="mobile-dots" role="tablist" aria-label="Paginación">
+      {Array.from({ length: count }, (_, i) => (
+        <button
+          key={i}
+          type="button"
+          role="tab"
+          aria-selected={i === active}
+          aria-label={`Ir al ítem ${i + 1} de ${count}`}
+          className={`mobile-dot${i === active ? ' is-active' : ''}`}
+          onClick={() => onSelect?.(i)}
+        />
+      ))}
+    </div>
+  );
+}
 
 /* ----------------------------- HERO (Figma 104:488) -------------- */
 /* Patrón Figma: KOKORO Host Grotesk 250px tracking -12.5px line 0.8
@@ -225,11 +293,22 @@ function TabbedReveal({
   /* Bloque tabs + cuerpos. Se renderiza tal cual en anchor='stack'
      (Roadmap) o envuelto en .sobre-group cuando anchor='split'
      (Sobre Kokoro) para que el justify-between del stack empuje el
-     conjunto hacia abajo y deje el título arriba. */
+     conjunto hacia abajo y deje el título arriba.
+
+     Dos layouts coexisten:
+     - DESKTOP (`.sobre-tabs-desktop`): tabs en fila arriba + body en
+       grid debajo (patrón Figma 151:192 / 151:201).
+     - MOBILE (`.sobre-tabs-mobile`): tabs verticales centradas — la
+       activa lleva Instrument Serif italic + ChevronDown y debajo se
+       muestra su body con una línea blanca de 88px; las inactivas van
+       en Mona Sans 20% blanco + ChevronRight, con líneas de 30px entre
+       ellas (patrón Figma 170:435 / 170:362).
+
+     CSS conmuta con `display: none` según el breakpoint 720px. */
   const tabsAndBody = (
     <>
       <motion.div
-        className="sobre-tabs"
+        className="sobre-tabs sobre-tabs-desktop"
         role="tablist"
         variants={fade}
         custom={1}
@@ -259,15 +338,101 @@ function TabbedReveal({
         ))}
       </motion.div>
 
-      {/* Stack de cuerpos: todos viven en la misma celda del grid (.sobre-
-          body-stack). El contenedor toma la altura del cuerpo más largo
-          y el resto se mantiene invisible pero ocupando espacio, por lo
-          que el título y las pestañas no se mueven al cambiar de tab.
+      {/* Stack de cuerpos desktop: todos viven en la misma celda del grid
+          (.sobre-body-stack). El contenedor toma la altura del cuerpo más
+          largo y el resto se mantiene invisible pero ocupando espacio.
           `is-wide` lo lleva de 672 a 751 (Figma 151:192) para Sobre Kokoro. */}
-      <div className={`sobre-body-stack${wideModifier}`}>
+      <div className={`sobre-body-stack sobre-body-stack-desktop${wideModifier}`}>
         {tabs.map((t, i) => (
           <SobreBody key={t.key} tab={t} isActive={i === active} />
         ))}
+      </div>
+
+      {/* Stack mobile como acordeón vertical (Figma 170:435 / 170:362).
+
+          Comportamiento — uno-abierto-siempre:
+          - Los tabs conservan SU ORDEN ORIGINAL en el array. NO se mueve
+            el activo arriba: cada tab permanece en su posición.
+          - El tab activo muestra inline (debajo de su label) el body y
+            su línea separadora pasa de 30px @20% a 88px en var(--ink).
+          - Al tocar otro tab, el body del anterior se anima a height:0
+            (colapsa en el sitio) y el del nuevo se anima a height:auto.
+            La línea del anterior pasa de 88 → 30 y la del nuevo 30 → 88.
+
+          Estructura por item:
+            <tab-block>                       ← gap interno 16px
+              <button .sobre-tab-m />
+              <AnimatePresence>
+                {isActive && <motion.div with height anim>
+                  <p .sobre-body-m />
+                </motion.div>}
+              </AnimatePresence>
+            </tab-block>
+            <span .sobre-line-m />            ← gap 24px del parent
+
+          El icono ArrowForwardIos lleva `rotate(90deg)` cuando el tab
+          está activo (Figma 170:454) — la transición CSS hace que gire
+          al expandir/colapsar. */}
+      <div
+        className="sobre-tabs-mobile"
+        role="tablist"
+        aria-label="Tabs (móvil)"
+      >
+        {tabs.map((t, i) => {
+          const isActive = i === active;
+          return (
+            <Fragment key={t.key}>
+              <div
+                className={`sobre-tab-block-m${isActive ? ' is-active' : ''}`}
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-expanded={isActive}
+                  aria-controls={`sobre-body-${t.key}`}
+                  className={`sobre-tab-m${isActive ? ' is-active' : ''}`}
+                  /* Click sobre el activo no hace nada (siempre hay uno
+                     abierto, que es el modelo del acordeón). Click sobre
+                     otro lo activa y colapsa el anterior. */
+                  onClick={() => {
+                    if (!isActive) setActive(i);
+                  }}
+                >
+                  <span className="sobre-tab-m-label">{t.label}</span>
+                  <ArrowForwardIos size={16} className="sobre-tab-m-icon" />
+                </button>
+                <AnimatePresence initial={false}>
+                  {isActive && (
+                    <motion.div
+                      id={`sobre-body-${t.key}`}
+                      key="body"
+                      className="sobre-body-m-wrap"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{
+                        height: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
+                        opacity: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+                      }}
+                    >
+                      <p className="sobre-body-m">
+                        {t.body}
+                        {t.italic && (
+                          <span className="sobre-body-m-italic">{t.italic}</span>
+                        )}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              <span
+                className={`sobre-line-m${isActive ? ' is-active' : ''}`}
+                aria-hidden="true"
+              />
+            </Fragment>
+          );
+        })}
       </div>
     </>
   );
@@ -756,6 +921,38 @@ function MVVBody({ text, active }) {
      se aclara un toque. Active: la pill se hunde 1px. Focus visible
      accesible con outline en --ink. */
 export function Equipo() {
+  /* Mobile (Figma 170:67): carrusel horizontal de 3 cards-glass con
+     scroll-snap. Cada card es un <a> al LinkedIn del miembro; el card
+     activo (índice = activeIdx) muestra el icono arrow_outward 24px en
+     la esquina superior derecha como hint de "tap para ir a LinkedIn".
+     Bajo el carrusel, 3 puntitos de paginación (MobileDots). El layout
+     desktop (overlap Iván · Candela centro · Olga con pills de nombre)
+     sigue intacto bajo `.equipo-desktop` — CSS conmuta entre layouts.
+
+     Orden de cards en móvil: Candela primero (CEO / founder, foto central
+     del Figma 170:67), después el resto en su orden original (Iván, Olga).
+     En desktop el orden NO cambia porque las posiciones (left/center/right)
+     dependen del índice via `variantClass`. */
+  const mobileMembers = useMemo(() => {
+    const idx = equipo.members.findIndex((m) => m.role === 'CEO');
+    if (idx <= 0) return equipo.members;
+    const reordered = [...equipo.members];
+    const [featured] = reordered.splice(idx, 1);
+    reordered.unshift(featured);
+    return reordered;
+  }, []);
+
+  const scrollerRef = useRef(null);
+  const activeIdx = useScrollDots(scrollerRef, mobileMembers.length);
+  const scrollToIdx = (i) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const first = el.firstElementChild;
+    const cardW = first ? first.getBoundingClientRect().width : el.clientWidth;
+    const gap = parseFloat(getComputedStyle(el).columnGap || 0) || 0;
+    el.scrollTo({ left: (cardW + gap) * i, behavior: 'smooth' });
+  };
+
   return (
     <section id="equipo" className="section section-equipo" data-slide>
       <div className="equipo-stack">
@@ -779,10 +976,48 @@ export function Equipo() {
           </motion.p>
         </div>
 
-        <div className="equipo-stage" aria-label="Miembros del equipo">
+        {/* Desktop: overlap stage (Iván · Candela centro · Olga). */}
+        <div className="equipo-stage equipo-desktop" aria-label="Miembros del equipo">
           {equipo.members.map((m, i) => (
             <TeamMember key={m.name} member={m} index={i} />
           ))}
+        </div>
+
+        {/* Mobile: carrusel horizontal de cards con link a LinkedIn.
+            Itera sobre `mobileMembers` (Candela → Iván → Olga) en vez de
+            `equipo.members` (Iván → Candela → Olga) para que la card que
+            asoma primero sea la de la CEO, como pide el Figma 170:67. */}
+        <div className="equipo-mobile" aria-label="Miembros del equipo (móvil)">
+          <div className="equipo-mobile-scroller" ref={scrollerRef}>
+            {mobileMembers.map((m, i) => (
+              <a
+                key={m.name}
+                href={m.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`equipo-card-m${i === activeIdx ? ' is-active' : ''}`}
+                aria-label={`${m.name} — ${m.role} · abrir perfil de LinkedIn en una pestaña nueva`}
+              >
+                <div className="equipo-card-m-photo">
+                  <img
+                    src={m.photo}
+                    alt=""
+                    loading="lazy"
+                    draggable="false"
+                  />
+                  <span className="equipo-card-m-arrow" aria-hidden="true">
+                    <ArrowOutward size={24} />
+                  </span>
+                </div>
+                <span className="equipo-card-m-name">{m.name}</span>
+              </a>
+            ))}
+          </div>
+          <MobileDots
+            count={mobileMembers.length}
+            active={activeIdx}
+            onSelect={scrollToIdx}
+          />
         </div>
       </div>
     </section>
@@ -1504,6 +1739,13 @@ const PhysicsPile = forwardRef(function PhysicsPile(
     };
     mql.addEventListener?.('change', onMqChange);
 
+    /* La física arranca SIEMPRE (también en móvil) — las pills caen y se
+       apilan con matter.js igual que en desktop. Lo único que cambia en
+       móvil es el drag: el handler `onPillPointerDown` sale temprano si
+       detecta táctil/móvil, así no captura el pointer ni hace
+       preventDefault, dejando libre el swipe horizontal del carrusel
+       padre (`.vacio-split`). Ver `onPillPointerDown` abajo. */
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !inViewRef.current) {
@@ -1598,6 +1840,12 @@ const PhysicsPile = forwardRef(function PhysicsPile(
 
   const onPillPointerDown = (e, idx) => {
     if (reducedMotionRef.current) return;
+    /* Móvil/táctil: SIN drag. La física sigue corriendo (las pills caen
+       y se apilan), pero no se pueden agarrar — el swipe horizontal queda
+       libre para el carrusel `.vacio-split`. Detección por puntero
+       primario en lugar de matchMedia(max-width:900) porque en tablets
+       con mouse el drag sigue siendo útil. */
+    if (e.pointerType === 'touch') return;
     const container = containerRef.current;
     if (!container) return;
     const rect = container.getBoundingClientRect();
@@ -1665,6 +1913,21 @@ export function VacioMercado() {
   const { left, right, displayTitle, displayBody } = negocio.vacio;
   const leftPileRef = useRef(null);
   const rightPileRef = useRef(null);
+  /* En móvil el `.vacio-split` se convierte en carrusel horizontal con
+     scroll-snap (Figma 170:132): cada card mide el ancho del viewport
+     menos los gutters laterales, y debajo aparecen 2 puntitos de
+     paginación. El hook useScrollDots refleja el card visible. La lógica
+     del PhysicsPile sigue activa dentro de cada card. */
+  const splitRef = useRef(null);
+  const activeIdx = useScrollDots(splitRef, 2);
+  const scrollToIdx = (i) => {
+    const el = splitRef.current;
+    if (!el) return;
+    const first = el.firstElementChild;
+    const cardW = first ? first.getBoundingClientRect().width : el.clientWidth;
+    const gap = parseFloat(getComputedStyle(el).columnGap || 0) || 0;
+    el.scrollTo({ left: (cardW + gap) * i, behavior: 'smooth' });
+  };
 
   return (
     <section id="vacio" className="section section-vacio" data-slide>
@@ -1697,6 +1960,7 @@ export function VacioMercado() {
         </header>
 
         <div
+          ref={splitRef}
           className="vacio-split"
           aria-label="Comparación visual entre puntos de dolor (Pains) y beneficios (Gains)"
         >
@@ -1740,6 +2004,9 @@ export function VacioMercado() {
             />
           </div>
         </div>
+        <div className="vacio-dots-mobile">
+          <MobileDots count={2} active={activeIdx} onSelect={scrollToIdx} />
+        </div>
       </div>
     </section>
   );
@@ -1753,9 +2020,14 @@ export function VacioMercado() {
    Reusa el contenedor `.intro-dual` (mismo layout que "Qué es") con la
    nueva clase `.solucion-list` para los 3 ítems del lado derecho. */
 export function SolucionDisruptiva() {
+  /* La sección usa el wrapper `.intro-dual` pero con modificador
+     `.intro-dual-left`: en móvil no se centra (como hacen "Qué es" y
+     "MVP intro") sino que se alinea a la izquierda, según pidió el
+     cliente. En desktop el modificador no cambia nada — sigue siendo
+     row con título-izq + ítems-dcha (Figma 159:318). */
   return (
-    <section id="solucion" className="section" data-slide>
-      <div className="intro-dual">
+    <section id="solucion" className="section section-solucion" data-slide>
+      <div className="intro-dual intro-dual-left">
         <h2 className="intro-dual-title">
           <RevealText as="span" className="intro-dual-title-line">
             {negocio.solucion.title}
@@ -1790,6 +2062,23 @@ export function SolucionDisruptiva() {
 export function MotorEscala() {
   const { title, main, side } = negocio.revenue;
   const cards = [main, ...side];
+  /* En desktop renderizamos el `.kk-rule-block` (border-y + separadores
+     verticales — Figma 137:100). En móvil sustituimos por un carrusel
+     horizontal de glass cards con paginación de puntitos (Figma 170:205).
+     Ambos layouts conviven en el JSX; CSS conmuta visibilidad por
+     breakpoint. El carrusel usa scroll-snap nativo y el hook
+     useScrollDots para reflejar el card visible. */
+  const scrollerRef = useRef(null);
+  const activeIdx = useScrollDots(scrollerRef, cards.length);
+  const scrollToIdx = (i) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const first = el.firstElementChild;
+    const cardW = first ? first.getBoundingClientRect().width : el.clientWidth;
+    const gap = parseFloat(getComputedStyle(el).columnGap || 0) || 0;
+    el.scrollTo({ left: (cardW + gap) * i, behavior: 'smooth' });
+  };
+
   return (
     <section id="motor" className="section" data-slide>
       <div className="kk-stack kk-stack-128 kk-stack-center">
@@ -1800,12 +2089,13 @@ export function MotorEscala() {
           whileInView="show"
           viewport={{ once: true, margin: '-15% 0px' }}
         >
-          <RevealText as="h2" className="kk-title-xl kk-title-center">
+          <RevealText as="h2" className="kk-title-xl kk-title-center motor-title">
             {title}
           </RevealText>
         </motion.div>
 
-        <div className="kk-rule-block kk-rule-block-lg">
+        {/* Desktop: rule-block */}
+        <div className="kk-rule-block kk-rule-block-lg motor-desktop">
           {cards.map((c, i) => (
             <motion.div
               key={c.eyebrow}
@@ -1820,6 +2110,23 @@ export function MotorEscala() {
               <p className="motor-cell-body">{c.body}</p>
             </motion.div>
           ))}
+        </div>
+
+        {/* Mobile: carrusel + dots */}
+        <div className="motor-mobile">
+          <div className="mobile-scroller" ref={scrollerRef}>
+            {cards.map((c) => (
+              <article key={c.eyebrow} className="mobile-card motor-card-m">
+                <h3 className="motor-card-m-title">{c.eyebrow}</h3>
+                <p className="motor-card-m-body">{c.body}</p>
+              </article>
+            ))}
+          </div>
+          <MobileDots
+            count={cards.length}
+            active={activeIdx}
+            onSelect={scrollToIdx}
+          />
         </div>
       </div>
     </section>
@@ -2069,6 +2376,20 @@ export function ProyeccionFinanciera() {
     },
   ];
 
+  /* Mobile: carrusel horizontal de las mismas 3 cards con paginación de
+     puntitos (Figma 170:331). El desktop sigue usando el `.kk-rule-block`
+     con border-y #3c3c3c y separadores verticales. */
+  const scrollerRef = useRef(null);
+  const activeIdx = useScrollDots(scrollerRef, escenarios.length);
+  const scrollToIdx = (i) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const first = el.firstElementChild;
+    const cardW = first ? first.getBoundingClientRect().width : el.clientWidth;
+    const gap = parseFloat(getComputedStyle(el).columnGap || 0) || 0;
+    el.scrollTo({ left: (cardW + gap) * i, behavior: 'smooth' });
+  };
+
   return (
     <section id="caja" className="section" data-slide>
       <div className="kk-stack kk-stack-64">
@@ -2085,7 +2406,8 @@ export function ProyeccionFinanciera() {
           ))}
         </h2>
 
-        <div className="kk-rule-block kk-rule-block-num">
+        {/* Desktop: rule-block */}
+        <div className="kk-rule-block kk-rule-block-num caja-desktop">
           {escenarios.map((e, i) => (
             <motion.div
               key={e.key}
@@ -2106,6 +2428,27 @@ export function ProyeccionFinanciera() {
               <span className={`caja-pill caja-pill-${e.tone}`}>{e.result}</span>
             </motion.div>
           ))}
+        </div>
+
+        {/* Mobile: carrusel + dots */}
+        <div className="caja-mobile">
+          <div className="mobile-scroller" ref={scrollerRef}>
+            {escenarios.map((e) => (
+              <article key={e.key} className="mobile-card caja-card-m">
+                <span className="kk-eyebrow">{e.label}</span>
+                <div className="caja-num-block">
+                  <span className="caja-num">{e.number}</span>
+                  <span className="caja-sub mono">{e.sub}</span>
+                </div>
+                <span className={`caja-pill caja-pill-${e.tone}`}>{e.result}</span>
+              </article>
+            ))}
+          </div>
+          <MobileDots
+            count={escenarios.length}
+            active={activeIdx}
+            onSelect={scrollToIdx}
+          />
         </div>
       </div>
     </section>

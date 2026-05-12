@@ -529,6 +529,19 @@ svg {
 @media (max-width: 720px) {
   :root {
     --pad-y: 96px;
+    /* Padding lateral móvil unificado a 24px. Lo expongo como var para
+       que cualquier módulo pueda referenciarlo en cálculos (p.ej. los
+       carruseles que extienden su scroller a ambos bordes del viewport
+       con `margin-inline: calc(var(--pad-x) * -1)`). */
+    --pad-x: 24px;
+  }
+  /* Override del padding de `.section`: vertical 96px (constante), lateral
+     24px exacto (Figma 170:* lo muestra explícitamente como px-24 en todas
+     las páginas móviles). El antes daba clamp(64, 10vw, 128) que en un
+     iPhone 12 (393px) era 64px de padding lateral — demasiado, dejaba
+     muy poco aire para módulos con tablas/carruseles. */
+  .section {
+    padding: 96px 24px;
   }
 }
 
@@ -537,8 +550,11 @@ svg {
    · sin position: sticky (las secciones fluyen una debajo de otra)
    · sin rail entre secciones (no hay viewports vacíos de transición)
    · sin transform/filter del useStackScroll (las vars quedan en 1)
-   · min-height: auto para que las secciones midan lo que necesite su
-     contenido — evita huecos enormes cuando hay poco contenido.
+   · `min-height: 100dvh` para que cada módulo siga ocupando una pantalla
+     visible — combinado con `justify-content: center` del `.section`
+     base, el contenido queda CENTRADO verticalmente. Antes era
+     `min-height: auto` y los módulos colapsaban a su contenido,
+     anclados arriba — ahora cada uno respira y rellena el viewport.
    Esto se combina con useLenis y useStackScroll, que ya no se enganchan
    en este breakpoint, y con SectionIndicator que se oculta también. */
 @media (max-width: 1024px) {
@@ -557,7 +573,8 @@ svg {
     margin-top: 0;
   }
   .section {
-    min-height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 }
 

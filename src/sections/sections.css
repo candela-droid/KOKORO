@@ -45,8 +45,16 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
+  /* Altura del viewport visible. Usamos `dvh` (dynamic viewport height)
+     en navegadores modernos para que el hero ocupe exactamente la zona
+     visible — la URL bar de Safari/Chrome móvil aparece/desaparece y
+     dvh recalcula al instante para que no quede ni vacío arriba ni
+     cortado abajo. `vh` queda como fallback en navegadores sin soporte
+     dvh (anteriores a 2022). */
   min-height: 100vh;
+  min-height: 100dvh;
   height: 100vh;
+  height: 100dvh;
   position: relative;
   overflow: hidden;
   /* Figma: pt-[411px] pb-[32px] px-[128px]. Adaptado a viewport. */
@@ -125,6 +133,23 @@
 @keyframes heroArrowBob {
   0%, 100% { transform: translateY(0); opacity: 1; }
   50% { transform: translateY(6px); opacity: 0.55; }
+}
+
+/* Hero móvil (Figma 170:48 / 170:125 / 170:297) — px 24 fijo y tipografía
+   80px para que KOKORO quepa cómodamente en un viewport de 360-414px. */
+@media (max-width: 720px) {
+  .hero {
+    /* Padding lateral fijo a 24px (sobre la base px-128 desktop). El
+       vertical sigue siendo proporcional al viewport para que el cue
+       baje aire suficiente. */
+    padding: clamp(120px, 30vh, 200px) 24px clamp(24px, 4vh, 32px);
+  }
+  .hero-mark {
+    /* 80px en Figma móvil. Bajamos el techo desde 250 a 80 — el clamp
+       sigue siendo elástico abajo del rango para teléfonos ultraestrechos. */
+    font-size: clamp(64px, 20vw, 80px);
+    letter-spacing: -0.05em;
+  }
 }
 
 /* ==========================================================================
@@ -683,53 +708,190 @@
   .equipo-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: clamp(20px, 4vw, 32px);
+    gap: 24px;
   }
   .equipo-header-title {
     width: 100%;
-    font-size: clamp(48px, 13vw, 80px);
+    font-size: 60px;
+    letter-spacing: -2.4px;
   }
   .equipo-header-intro {
     text-align: left;
-    font-size: clamp(15px, 4.4vw, 18px);
+    font-size: 16px;
+    line-height: 1.5;
   }
 }
 
-/* Tablet / móvil: la tira de tres fotos lado a lado no cabe bien. La
-   apilamos en una sola columna con la pill centrada debajo de cada foto.
-   Quitamos el overlap absolute de Candela — todas como flex items. */
+/* ==========================================================================
+   Equipo móvil (Figma 170:67) — carrusel de 3 cards
+   --------------------------------------------------------------------------
+   Sustituye el patrón desktop (overlap absolute Iván · Candela · Olga +
+   pills de nombre) por un carrusel horizontal con scroll-snap.
+
+   Cada card es un <a> al LinkedIn del miembro:
+     · Glass bg rgba(255,255,255,0.05) + border-radius 24px
+     · Foto 345×~375 px (Figma 176:534), aspect-ratio 345/375 para
+       escalar limpio en cualquier ancho de viewport
+     · arrow_outward 24px en top:24/right:24 — solo visible en card
+       ACTIVA (índice = activeIdx del useScrollDots) como hint de tap
+     · Nombre Mona Sans Medium 20px text-right debajo
+
+   El `.equipo-stage.equipo-desktop` se oculta vía display:none — sólo
+   el `.equipo-mobile` se ve en este breakpoint. Bajo el carrusel hay
+   tres puntitos de paginación (.mobile-dots) compartidos con el resto
+   de slidders móviles del sitio.
+
+   Scroller full-bleed: padding 24px + margin -24px lo extiende a los
+   bordes del viewport para que el card no quede pegado al padding y
+   el siguiente asome generosamente por la derecha. */
+.equipo-mobile {
+  display: none;
+}
+
 @media (max-width: 720px) {
-  .equipo-stage {
-    flex-direction: column;
-    gap: 24px;
-    align-items: center;
-    height: auto;
+  /* Padding-bottom de 128px sólo en Equipo móvil — el footer del Figma
+     170:67 deja ese aire abajo entre los puntitos de paginación y el
+     borde inferior de la sección. El padding lateral (24px) y top (96px)
+     los hereda del override global de `.section`.
+
+     ⚠️ Especificidad crítica: hay otra regla `.section.section-equipo`
+     (dos clases = 0,2,0) más arriba en este archivo que setea
+     `padding-bottom: var(--section-indicator-h)`. En móvil esa var
+     colapsa a 0px (porque oculto el SectionIndicator) y dejaba el
+     padding-bottom a 0, ignorando los 128px que añadí. Para ganar la
+     cascada igualamos a 0,2,0 con el mismo doble-clase — al estar mi
+     regla declarada DESPUÉS en source order, gana a igual especificidad. */
+  .section.section-equipo {
+    padding-bottom: 128px;
   }
-  .equipo-member {
-    position: relative;
-    height: clamp(280px, 56vh, 420px);
-    width: 100%;
+
+  /* Ocultamos el layout overlap desktop — el carrusel toma su lugar. */
+  .equipo-desktop {
+    display: none !important;
+  }
+
+  /* Stack: header arriba, carrusel + dots abajo. Sin justify-content:
+     flex-end porque ahora el stack es altura natural (no necesitamos
+     empujar las fotos al fondo de la sección). */
+  .equipo-stack {
+    justify-content: center;
+    gap: 32px;
     flex: 0 0 auto;
   }
-  /* Reset del absolute de Candela: en móvil va apilada como las otras. */
-  .equipo-member.is-center {
-    position: relative;
-    left: auto;
-    transform: none;
-  }
-  .equipo-member-caption {
-    position: static;
-    margin-top: -36px;
+
+  .equipo-mobile {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
   }
-  .equipo-member.is-left .equipo-member-caption,
-  .equipo-member.is-center .equipo-member-caption,
-  .equipo-member.is-right .equipo-member-caption {
-    top: auto;
-    left: auto;
-    right: auto;
-    bottom: auto;
+
+  .equipo-mobile-scroller {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-inline: 24px;
+    margin-inline: -24px;
+    width: calc(100% + 48px);
+    scroll-padding-inline-start: 24px;
+    touch-action: pan-x;
+  }
+  .equipo-mobile-scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Card = link al LinkedIn. flex:0 0 calc(100vw - 60px) → en iPhone 12
+     (393px) el card mide 333px y el siguiente asoma ~36px. */
+  .equipo-card-m {
+    flex: 0 0 calc(100vw - 60px);
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--ink);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .equipo-card-m:focus-visible {
+    outline: 1px solid var(--ink);
+    outline-offset: 6px;
+    border-radius: 24px;
+  }
+
+  /* Foto: aspect-ratio 345/375 (Figma 176:534). Bg glass para el caso
+     en que la imagen tarde en cargar o falle — el card sigue teniendo
+     forma visible. border-radius 24px sobre overflow:hidden recorta la
+     img al contorno. */
+  .equipo-card-m-photo {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 345 / 375;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 24px;
+    overflow: hidden;
+  }
+
+  .equipo-card-m-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: bottom center;
+    filter: grayscale(1);
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+    transition: filter 0.4s var(--easing);
+  }
+
+  /* Hover/focus del card → desatura un poco la foto para reforzar el
+     feedback de "interactivo". También ligero scale del icono. */
+  .equipo-card-m:hover .equipo-card-m-photo img,
+  .equipo-card-m:focus-visible .equipo-card-m-photo img {
+    filter: grayscale(0.5);
+  }
+
+  /* Icono arrow_outward en esquina superior-derecha. Visible SÓLO en el
+     card activo del carrusel — los inactivos están ahí pero ocultos vía
+     opacity:0 para que no salten al entrar en pantalla (se animan al
+     opacity:1 cuando el card pasa a is-active por el scroll). */
+  .equipo-card-m-arrow {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: var(--ink);
+    opacity: 0;
+    transition: opacity 0.3s var(--easing), transform 0.3s var(--easing);
+    pointer-events: none;
+  }
+  .equipo-card-m.is-active .equipo-card-m-arrow {
+    opacity: 1;
+  }
+
+  /* Nombre debajo del card. Mona Sans Medium 20px CENTRADO con el card
+     (decisión UX — antes era text-right según Figma 176:538, pero a
+     petición se centra para que el nombre quede balanceado bajo la foto
+     en pantallas estrechas). No baja a 16px porque es una etiqueta
+     corta de card, mantiene jerarquía contra los bodies de la página. */
+  .equipo-card-m-name {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 20px;
+    line-height: 1.4;
+    letter-spacing: -0.6px;
+    color: var(--ink);
+    text-align: center;
+    white-space: nowrap;
+    width: 100%;
+    font-feature-settings: 'dlig' 1;
   }
 }
 
@@ -1237,14 +1399,27 @@
    MVP Page — Figma 104:516
    ========================================================================== */
 
-/* MVP Hero (104:570): centrado vertical · pill bordeada · título 120px · lead */
+/* MVP Hero (104:570): centrado vertical · pill bordeada · título 120px · lead.
+   Altura = viewport visible. dvh con fallback a vh para que el header
+   descuente la URL bar del navegador móvil dinámicamente. */
 .inner-hero {
   min-height: 100vh;
+  min-height: 100dvh;
   align-items: center;
   justify-content: center;
   padding-top: clamp(140px, 20vw, 210px);
   padding-bottom: clamp(80px, 10vw, 128px);
   text-align: center;
+}
+
+/* Inner hero móvil (Figma 170:125 / 170:297). El padding-inline lo dicta
+   el override global de .section a 24px; aquí sólo aseguramos los
+   verticales sean los del Figma (no los desktop clamp 140-210/80-128). */
+@media (max-width: 720px) {
+  .inner-hero {
+    padding-top: clamp(120px, 24vh, 180px);
+    padding-bottom: clamp(48px, 8vh, 96px);
+  }
 }
 
 .inner-hero-stack {
@@ -1670,27 +1845,250 @@ body.is-grabbing .vacio-pill {
   }
 }
 
-/* Mobile (≤ 600px) — apilamos cards en columna. Cada una mantiene su
-   altura mínima para que las pills tengan sitio para caer. */
-@media (max-width: 600px) {
+/* Mobile (≤ 900px) — Figma 170:132 convierte el `.vacio-split` en un
+   carrusel horizontal con scroll-snap: cada card ocupa ~85% del viewport,
+   el resto deja asomar la siguiente card por la derecha. Los puntitos
+   inferiores reflejan el card visible (ver useScrollDots en Sections.jsx).
+   La altura fija de 414px del Figma se traduce aquí a una altura cómoda
+   que da sitio a las pills sin romper el ratio. */
+.vacio-dots-mobile {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  /* Igual que `.mobile-scroller`: scroller full-bleed que extiende a los
+     bordes del viewport (margin-inline:-24px sobre un padding de .section
+     ahora también 24px) y card ancho ~viewport-60 para que entren entero
+     con el siguiente asomando ~36px. */
   .vacio-split {
-    flex-direction: column;
+    flex: 0 0 auto;
+    flex-direction: row;
     align-items: stretch;
     gap: 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-inline: 24px;
+    margin-inline: -24px;
+    width: calc(100% + 48px);
+    scroll-padding-inline-start: 24px;
+    /* Permitir pan horizontal del navegador — el carrusel necesita
+       capturar el swipe horizontal y dejar pasar el scroll vertical. */
+    touch-action: pan-x;
+  }
+  .vacio-split::-webkit-scrollbar {
+    display: none;
   }
   .vacio-card {
-    flex: 0 0 auto;
-    min-height: 60vh;
+    flex: 0 0 calc(100vw - 60px);
+    scroll-snap-align: start;
+    min-height: 414px;
+  }
+
+  /* ----- MÓVIL: física activa, solo deshabilitamos el drag -----
+     La simulación de matter.js corre igual que en desktop (pills caen y
+     se apilan). Lo único que cambia es:
+
+     1. `touch-action` de `.vacio-pile` pasa de `none` (que bloqueaba todos
+        los gestos táctiles, incluido el swipe del carrusel padre) a
+        `pan-x` — el browser puede capturar el pan horizontal y dejar el
+        carrusel funcionando, pero las pills siguen sin scrollearse
+        verticalmente al tocar (la card es alta, no necesita scroll
+        interno).
+     2. El drag de pills se deshabilita en táctil vía JS: el handler
+        `onPillPointerDown` sale temprano si `e.pointerType === 'touch'`.
+        Sin esto, el `setPointerCapture` interceptaría el swipe y el
+        carrusel no respondería.
+
+     Las pills mantienen su tamaño desktop (clamp 15-20px font / 12x24
+     padding) — la física sigue siendo la misma escena. */
+  .vacio-pile {
+    touch-action: pan-x;
+  }
+  .vacio-pill {
+    cursor: default;
   }
   .vacio-card-head {
-    padding: 24px;
+    padding: 32px;
   }
   .vacio-card-title {
-    font-size: clamp(22px, 6vw, 28px);
+    font-size: 40px;
+    letter-spacing: -1.6px;
   }
   .vacio-pill {
     padding: 10px 18px;
-    font-size: clamp(14px, 3.8vw, 17px);
+    font-size: 18px;
+  }
+  .vacio-dots-mobile {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+  }
+}
+
+/* ==========================================================================
+   Patrón compartido carrusel mobile — `.mobile-scroller` + `.mobile-card`
+   --------------------------------------------------------------------------
+   Usado en MotorEscala (Modelo de negocio) y ProyeccionFinanciera (Caja)
+   en móvil. Mismo shape: glass card rgba(255,255,255,0.05) rounded-24
+   p-32, scroll-snap horizontal y mandatory.
+
+   Estrategia "full-bleed":
+   - El scroller extiende a los bordes del viewport (margin-inline: -24px,
+     ya que el padding del .section móvil es 24px). Esto evita que el card
+     activo quede pegado al padding lateral cortando su contorno.
+   - Padding-inline 24px dentro del scroller: el primer card snap-start
+     queda alineado exactamente con el contenido del resto de la sección.
+   - Card ancho = 100vw - 60px → en un iPhone 12 (393px) la card mide
+     333px (cercano al 331px del Figma 170:163/220/384), y el siguiente
+     card asoma ~36px por la derecha. Con scroll-snap-align: start, el
+     card snapeado siempre arranca a 24px del borde izquierdo (cabe entero
+     en pantalla) y el del lado opuesto queda asomado pero no cortado.
+   En desktop ambos contenedores quedan oculto vía CSS específico (clase
+   `.motor-mobile`, `.caja-mobile`) — sólo se ven en ≤900px. */
+.mobile-scroller {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  /* En móvil el padding de .section es 24px, así que extender el scroller
+     -24px por cada lado lo lleva a los bordes del viewport. Para tablets
+     (>720px sin override) recurrimos al mismo -24 porque el inner padding
+     vuelve a ser 24 también vía `padding-inline: 24px` aquí abajo. */
+  margin-inline: -24px;
+  padding-inline: 24px;
+  width: calc(100% + 48px);
+  scroll-padding-inline-start: 24px;
+}
+.mobile-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-card {
+  /* Ancho del card: viewport - 60px. Deja 24px de padding izq + card +
+     16px de gap + ~20px de "peek" del siguiente card. Coincide con la
+     proporción 331/393 del Figma 170:* mobile. */
+  flex: 0 0 calc(100vw - 60px);
+  scroll-snap-align: start;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  padding: 32px;
+  min-height: 414px;
+  display: flex;
+  flex-direction: column;
+  color: var(--ink);
+  font-feature-settings: 'ordn' 1, 'dlig' 1;
+}
+
+:root[data-theme='light'] .mobile-card {
+  background: rgba(11, 11, 11, 0.05);
+}
+
+/* ----- Dots de paginación mobile (Figma 170:189 / 170:243 / 170:394) ---- */
+.mobile-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.mobile-dot {
+  width: 39px;
+  height: 4px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  border-radius: 37px;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: background 0.3s var(--easing);
+}
+
+.mobile-dot.is-active {
+  background: var(--ink);
+}
+
+.mobile-dot:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 4px;
+}
+
+:root[data-theme='light'] .mobile-dot {
+  background: rgba(11, 11, 11, 0.1);
+}
+:root[data-theme='light'] .mobile-dot.is-active {
+  background: var(--ink);
+}
+
+/* Por defecto los bloques `.motor-mobile`, `.caja-mobile` están ocultos
+   en desktop. El switch se da a partir de 900px (mismo breakpoint que
+   el cambio de layout en el resto del site). */
+.motor-mobile,
+.caja-mobile {
+  display: none;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .motor-desktop,
+  .caja-desktop {
+    display: none !important;
+  }
+  .motor-mobile,
+  .caja-mobile {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* ----- Cards mobile específicos (Modelo de negocio / Proyección) ------- */
+.motor-card-m {
+  justify-content: space-between;
+}
+
+.motor-card-m-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 0.8;
+  letter-spacing: -1.12px;
+  color: var(--ink);
+  font-feature-settings: 'dlig' 1;
+  text-transform: capitalize;
+}
+
+.motor-card-m-body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.4;
+  letter-spacing: -0.72px;
+  color: var(--ink);
+  font-feature-settings: 'ordn' 1, 'ss01' 1, 'ss02' 1, 'ss03' 1, 'ss04' 1,
+    'ss05' 1, 'dlig' 1;
+}
+
+.caja-card-m {
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  text-align: center;
+}
+
+/* Título del Motor: en móvil deja de ser display-xl y baja a 60px como
+   el resto de títulos del breakpoint. */
+@media (max-width: 720px) {
+  .motor-title {
+    font-size: 60px;
+    letter-spacing: -2.4px;
   }
 }
 
@@ -2345,11 +2743,11 @@ body.is-grabbing .vacio-pill {
    ========================================================================== */
 
 @media (max-width: 900px) {
-  /* Padding más comedido para que el contenido respire sin "ahogarse"
-     en pantallas estrechas, manteniendo aire suficiente para que la
-     barra superior no choque con el contenido. */
+  /* Tablet / mobile transition (720-900px): padding-inline 24px desde el
+     Figma móvil. Vertical proporcional al viewport para que la barra
+     superior no choque con el contenido. */
   .section {
-    padding: clamp(80px, 18vw, 120px) clamp(20px, 5vw, 32px) clamp(56px, 10vw, 96px);
+    padding: clamp(80px, 14vw, 120px) 24px clamp(56px, 10vw, 96px);
   }
 
   /* Apilamos también el bloque legal / dossier del contacto. */
@@ -2369,6 +2767,7 @@ body.is-grabbing .vacio-pill {
   .hero {
     padding-top: clamp(120px, 22vw, 200px);
     padding-bottom: clamp(20px, 5vw, 32px);
+    padding-inline: 24px;
   }
 
   /* El símbolo japonés del módulo Kokoro era 160px mínimo — desproporcionado
@@ -2385,23 +2784,28 @@ body.is-grabbing .vacio-pill {
   .kk-stack-128 { gap: clamp(40px, 8vw, 80px); }
   .kk-stack-64 { gap: clamp(32px, 6vw, 56px); }
 
-  /* Cuerpo más legible. */
-  .kk-body { font-size: 17px; line-height: 1.45; }
-  .kk-body-italic { font-size: 17px; line-height: 1.45; }
+  /* Cuerpo unificado a 16px en todo el rango tablet/mobile (decisión de
+     diseño mayo 2026 — antes era 17px aquí y otros valores en breakpoints
+     más estrechos). La regla más completa vive en @media 720px más abajo;
+     dejamos esta entrada como guía explícita para 720-900px. */
+  .kk-body { font-size: 16px; line-height: 1.5; }
+  .kk-body-italic { font-size: 16px; line-height: 1.5; }
 }
 
 /* Móvil real ─────────────────────────────────────────────── */
 @media (max-width: 600px) {
-  /* Reducimos aún más el padding de sección — el contenido necesita ancho. */
+  /* Mantenemos los 24px de padding-inline en todas las pantallas pequeñas
+     (Figma 170:* / px-24 fijo). Reducimos sólo el vertical para teléfonos
+     muy compactos donde el aire arriba/abajo come demasiado espacio. */
   .section {
-    padding: clamp(72px, 22vw, 96px) 20px clamp(48px, 12vw, 72px);
+    padding: clamp(72px, 22vw, 96px) 24px clamp(48px, 12vw, 72px);
   }
 
-  /* Hero: el "KOKORO" es lo único que vive aquí, así que lo dejamos lo
-     más grande posible sin desbordar. white-space: nowrap se mantiene;
-     ajustamos el clamp para usar todo el ancho. */
+  /* Hero móvil — Figma 170:48 muestra KOKORO a 80px. Mantenemos el techo
+     bajo y dejamos el suelo elástico para que en teléfonos ultra-anchos
+     (>600px de width) el texto siga creciendo. */
   .hero-mark {
-    font-size: clamp(72px, 24vw, 120px);
+    font-size: clamp(64px, 20vw, 80px);
     letter-spacing: -0.05em;
   }
   .hero-cue-label { font-size: 13px; }
@@ -2588,16 +2992,32 @@ body.is-grabbing .vacio-pill {
 }
 
 @media (max-width: 900px) {
+  /* En móvil colapsamos a columna y dejamos TODO alineado a la
+     izquierda — afecta a "Qué es" (home), "Mínimo Producto Viable"
+     (/mvp) y "Solución" (/modelo), que comparten este wrapper.
+     El centrado VERTICAL sigue funcionando vía el `justify-content:
+     center` del `.section` con `min-height: 100dvh` — el contenido
+     queda anclado a la izquierda pero centrado en el eje vertical
+     del viewport. */
   .intro-dual {
     flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
     gap: clamp(32px, 6vw, 48px);
   }
   .intro-dual-title {
     font-size: clamp(48px, 13vw, 80px);
     white-space: normal;
+    text-align: left;
+  }
+  .intro-dual-body {
+    align-items: flex-start;
+    width: 100%;
   }
   .intro-dual-para {
-    font-size: clamp(18px, 4.6vw, 22px);
+    font-size: 16px;
+    line-height: 1.5;
+    text-align: left;
   }
 }
 
@@ -2779,8 +3199,181 @@ body.is-grabbing .vacio-pill {
     width: 100%;
   }
   .sobre-body {
-    font-size: clamp(18px, 4.6vw, 22px);
+    font-size: 16px;
+    line-height: 1.5;
   }
+}
+
+/* ==========================================================================
+   Sobre Kokoro / Roadmap — Stack vertical mobile (Figma 170:435 / 170:362)
+   --------------------------------------------------------------------------
+   Layout móvil que sustituye la fila horizontal de tabs por una pila
+   vertical centrada: tab activa (Instrument Serif italic + ChevronDown)
+   → body → línea blanca 88px → tabs inactivas (Mona Sans 20% + Chevron-
+   Right) separadas por líneas blancas/20% de 30px. El stack desktop se
+   oculta en este breakpoint y viceversa, así que sólo hay una copia
+   visible a la vez (no doble layout en pantalla). */
+.sobre-tabs-mobile {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  /* En mobile mostramos sólo el stack vertical: title centrado +
+     bloque interleaved con la tab activa, body y tabs inactivas. */
+  .sobre-tabs-desktop,
+  .sobre-body-stack-desktop {
+    display: none !important;
+  }
+  .sobre-tabs-mobile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+  }
+  .sobre-stack,
+  .sobre-stack.is-split {
+    align-items: center;
+    text-align: center;
+  }
+  .sobre-title {
+    text-align: center;
+    white-space: normal;
+  }
+
+  /* Sub-grupo en móvil: el padding-bottom del Hero ya separa la sección,
+     así que no necesitamos justify-between en split — anulamos para que
+     el contenido fluya centrado y sin huecos enormes. */
+  .sobre-stack.is-split {
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+}
+
+/* Cada item del acordeón móvil — agrupa el botón del tab con su body
+   colapsable. Cuando el tab está activo el body se renderiza dentro de
+   este bloque (gap-16 desde Figma 170:438). Cuando está inactivo el
+   bloque sólo contiene el botón y el gap-16 no produce hueco visible
+   porque no hay un segundo hijo. El stack exterior pone gap-24 entre
+   este bloque y la línea siguiente. */
+.sobre-tab-block-m {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Wrapper que framer-motion anima en height: 0 ↔ auto. overflow:hidden
+   permite que el body sea recortado limpiamente mientras la altura se
+   anima. Width 100% para que el texto centrado mantenga su ancho. */
+.sobre-body-m-wrap {
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Botón de tab móvil. Reset de estilos nativos + flex con icono. La
+   activa lleva Instrument Serif italic blanco; las inactivas Mona Sans
+   uppercase 20% blanco. El icono usa currentColor → siempre coordinado. */
+.sobre-tab-m {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  font-feature-settings: 'ordn' 1, 'dlig' 1;
+}
+
+.sobre-tab-m.is-active {
+  font-family: var(--font-serif);
+  font-style: italic;
+  text-transform: none;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+}
+
+.sobre-tab-m-icon {
+  flex-shrink: 0;
+  display: block;
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s var(--easing);
+}
+
+/* Icono del tab activo: arrow_forward_ios rotado 90° → apunta hacia
+   abajo. Figma 170:454 explícitamente lo rota dentro de su wrapper. */
+.sobre-tab-m.is-active .sobre-tab-m-icon {
+  transform: rotate(90deg);
+}
+
+/* Body móvil: centrado, Mona Sans 20px tracking -0.6px line 1.4 con
+   fragmento Instrument Serif italic. Coincide con Figma 170:440. */
+.sobre-body-m {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  text-align: center;
+  width: 100%;
+  font-feature-settings: 'ordn' 1, 'ss01' 1, 'ss05' 1, 'dlig' 1;
+}
+
+.sobre-body-m-italic {
+  font-family: var(--font-serif);
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+
+/* Línea separadora del stack móvil — única clase con transición entre
+   los dos estados:
+   - default (tab inactivo): 30px de ancho, blanco al 20% (Figma 170:443
+     /445/447).
+   - is-active (tab abierto): 88px de ancho, blanco al 100% (Figma
+     170:441).
+   La transición ocurre simultáneamente con la expansión/colapso del
+   body, así que la línea "crece" cuando el body baja y "se acorta"
+   cuando el body sube. */
+.sobre-line-m {
+  display: block;
+  height: 1px;
+  border: 0;
+  width: 30px;
+  background: rgba(255, 255, 255, 0.2);
+  transition:
+    width 0.45s var(--easing),
+    background-color 0.45s var(--easing);
+}
+
+.sobre-line-m.is-active {
+  width: 88px;
+  background: var(--ink);
+}
+
+:root[data-theme='light'] .sobre-tab-m {
+  color: rgba(11, 11, 11, 0.3);
+}
+:root[data-theme='light'] .sobre-tab-m.is-active {
+  color: var(--ink);
+}
+:root[data-theme='light'] .sobre-line-m {
+  background: rgba(11, 11, 11, 0.2);
+}
+:root[data-theme='light'] .sobre-line-m.is-active {
+  background: var(--ink);
 }
 
 /* prefers-reduced-motion: ya tenemos un override global que neutraliza
@@ -3050,23 +3643,37 @@ body.is-grabbing .vacio-pill {
 }
 
 /* ==========================================================================
-   Tipografía móvil unificada — alineada con Figma 170:48 / 170:124 / 170:296
+   Tipografía móvil unificada — alineada con Figma 170:* y revisión de
+   contenido (todos los párrafos a 16px).
    --------------------------------------------------------------------------
-   En móvil todos los títulos grandes (Host Grotesk display) bajan a ~60px y
-   los bodies grandes a 20px, según los frames móviles del Figma. Mantenemos
-   los `clamp` originales para que la transición sea suave entre breakpoints
-   pero ajustamos el techo al valor del Figma móvil.
-   - kk-title / kk-title-xl: 120 desktop → 60 móvil
-   - intro-dual-title: 120 desktop → 60 móvil (Qué es, MVP)
-   - inner-title (hero interno): 120 desktop → 60 móvil
-   - sobre-title (Sobre Kokoro, Roadmap): 120 desktop → 60 móvil
-   - vacio-display-title (Situación actual): 120 desktop → 60 móvil
-   - caja-title (Proyección financiera): 120 desktop → 60 móvil
-   - ventaja-title: 120 desktop → 60 móvil
-   - bodies grandes (intro-dual-para, solucion-item-body, motor-cell-body):
-     28/24 desktop → 20 móvil
-   - inner-lead: 20 desktop → 16 móvil (Figma 170:160 / 170:300)
-*/
+   Títulos display (Host Grotesk): 60px en móvil.
+     - kk-title / kk-title-xl: 120 desktop → 60 móvil
+     - intro-dual-title (Qué es, MVP)
+     - inner-title (hero interno)
+     - sobre-title (Sobre Kokoro, Roadmap)
+     - vacio-display-title (Situación actual)
+     - caja-title (Proyección financiera)
+     - ventaja-title
+
+   Body / párrafos (Mona Sans + Instrument Serif italic): **16px** unificado
+   en móvil. Antes había una mezcla 17/18/20/24/28px y resultaba ruidoso
+   en pantallas pequeñas; ahora todo el cuerpo de texto está a 16px line
+   1.5 — letter-spacing -0.48px (-0.03em) para mantener el carácter
+   editorial. Cubre:
+     - inner-lead (hero interno)
+     - intro-dual-para (Qué es, MVP)
+     - solucion-item-body (Solución)
+     - motor-cell-body / motor-card-m-body (Modelo de negocio)
+     - vacio-display-body (Situación actual)
+     - ventaja-row-body (Nuestra ventaja)
+     - sobre-body / sobre-body-m (tabs body desktop + acordeón mobile)
+     - kk-body / kk-body-italic (Problema / Gap / Solución / Motor desktop)
+     - page-hero-lead (sub-páginas)
+
+   Excepciones que NO bajan a 16px (siguen jerarquía):
+     - Números grandes (.caja-num, 100px → 80px en móvil)
+     - Eyebrows mono uppercase (.kk-eyebrow, 14px fijo)
+     - Labels de tab activo / pill (.sobre-tab-m, .caja-pill, 18-24px) */
 @media (max-width: 720px) {
   .intro-dual-title,
   .sobre-title,
@@ -3082,23 +3689,29 @@ body.is-grabbing .vacio-pill {
     font-size: 60px;
     letter-spacing: -3px;
   }
-  .inner-lead {
-    font-size: 16px;
-  }
+
+  /* Body unificado a 16px para móvil. Letter-spacing recalculado para
+     mantener -0.03em (-0.48px sobre 16px). */
+  .inner-lead,
   .intro-dual-para,
   .solucion-item-body,
-  .motor-cell-body {
-    font-size: 20px;
-    letter-spacing: -0.6px;
+  .motor-cell-body,
+  .motor-card-m-body,
+  .vacio-display-body,
+  .ventaja-row-body,
+  .sobre-body,
+  .sobre-body-m,
+  .kk-body,
+  .kk-body-italic,
+  .page-hero-lead {
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: -0.48px;
   }
-  .vacio-display-body {
-    font-size: 20px;
-    letter-spacing: -0.6px;
-  }
+
+  /* Título de fila de Ventaja: en móvil ya no es "display" — pasa a 20px
+     para mantener jerarquía contra el body de 16px que tiene al lado. */
   .ventaja-row-title {
-    font-size: 24px;
-  }
-  .ventaja-row-body {
     font-size: 20px;
   }
 }
