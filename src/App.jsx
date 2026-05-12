@@ -12,6 +12,8 @@ import {
   Lifebuoy,
   Trophy,
   Receipt,
+  Cube,
+  Path,
 } from './components/SectionIcons.jsx';
 import Cursor from './components/Cursor.jsx';
 import { RouterProvider, useRouter } from './router.jsx';
@@ -45,9 +47,9 @@ const SECTION_ITEMS_BY_ROUTE = {
     { id: 'ventaja', label: 'Ventaja', icon: Trophy },
   ],
   '/mvp': [
-    { id: 'mvp-intro', label: 'MVP' },
+    { id: 'mvp-intro', label: 'MVP', icon: Cube },
     { id: 'caja', label: 'Proyección', icon: Receipt },
-    { id: 'roadmap', label: 'Roadmap' },
+    { id: 'roadmap', label: 'Roadmap', icon: Path },
   ],
 };
 

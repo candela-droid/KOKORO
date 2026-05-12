@@ -40,9 +40,11 @@
 
 .section-indicator {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  /* `inset: 0` aplicado a los 4 bordes explícitamente garantiza el
+     anclaje al borde inferior sin que ningún user-agent reset deje
+     valores ambiguos. */
+  inset: auto 0 0 0;
+  margin: 0;
   z-index: 27;
   display: flex;
   align-items: center;
@@ -62,17 +64,20 @@
      para que el texto siga siendo legible sobre cualquier sección. */
 
   /* Estado de visibilidad. Mientras el visitante está "en el hero" el strip
-     se desliza fuera de pantalla (translateY 100%) y la barra de progreso
-     baja con él vía la clase `section-indicator-hidden` que ponemos en
-     <body>. Al entrar la primera sección de contenido, ambos suben en
-     sincronía. */
-  transform: translateY(100%);
+     se desliza fuera de pantalla y al entrar la primera sección sube. Uso
+     `translate3d` en lugar de `translateY` para forzar un layer GPU con
+     rasterización a píxel entero — evita el hairline gap de 1px que
+     algunos navegadores (sobre todo Safari y Chrome con cierto device
+     pixel ratio) dejaban entre el strip y el borde inferior del viewport
+     cuando el transform se interpolaba con `translateY` simple. */
+  transform: translate3d(0, 100%, 0);
   transition: transform 0.45s var(--easing);
   will-change: transform;
+  backface-visibility: hidden;
 }
 
 .section-indicator.is-visible {
-  transform: translateY(0);
+  transform: translate3d(0, 0, 0);
 }
 
 /* Cuando el strip está oculto (typically en el hero), anulamos su altura

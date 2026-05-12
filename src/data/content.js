@@ -263,12 +263,15 @@ export const negocio = {
   // mirror linking — agarrar una mueve la del otro lado en espejo.
   vacio: {
     eyebrow: 'el punto de dolor',
-    /* Figma 104:872 — el módulo lleva ahora un header propio: título
-       grande "Situación / actual" + body Mona Sans alineado a la derecha
-       sobre las dos cards Pains/Gains. */
+    /* Figma 104:872 — header propio: título grande "Situación / actual"
+       a dos líneas + body Mona Sans 20px alineado a la derecha en columna
+       de 508px (Figma 159:317). El body se actualizó al copy que pide
+       el cliente — antes era una frase sobre el vacío del mercado, ahora
+       habla del compromiso del equipo (mismo párrafo que aparece en la
+       sección Equipo, intencionalmente reutilizado). */
     displayTitle: ['Situación', 'actual'],
     displayBody:
-      'Cada día, las personas con alergias e intolerancias se enfrentan a un mercado que las ha ignorado. Kokoro nace para invertir esa ecuación: a la izquierda, lo que duele; a la derecha, la respuesta.',
+      'Estos somos los que soñamos, diseñamos y ejecutamos Kokoro Foods día a día. Nuestra mayor garantía es nuestro compromiso con este proyecto.',
     title: 'El vacío vs. la respuesta',
     left: [
       'Trazas invisibles',
@@ -291,9 +294,17 @@ export const negocio = {
       'Estándar nuevo',
     ],
   },
+  /* Solución — textos literales del Figma 159:318:
+     · title 159:319: "Solución"
+     · cell 159:337: eyebrow "seguridad sin renuncias" + body 159:340
+     · cell 159:341: eyebrow "el punto de partida" + body 159:344
+     · cell 159:345: eyebrow "alimentos con alma" + body 159:348 (el
+       body lleva un doble espacio entre `"Kokoro"` y `representa` que
+       Figma preserva con whitespace-pre-wrap; aquí lo guardamos tal
+       cual, aunque la renderización HTML por defecto lo colapsa a uno) */
   solucion: {
     eyebrow: 'el producto',
-    title: 'La solución disruptiva',
+    title: 'Solución',
     cells: [
       {
         icon: 'repeat',
@@ -304,14 +315,13 @@ export const negocio = {
       {
         icon: 'tag',
         eyebrow: 'el punto de partida',
-        body:
-          'Una línea inclusiva de granola sin frutos secos, gluten ni lactosa, maridada con café de especialidad.',
+        body: 'Una cafetería de especialidad',
       },
       {
         icon: 'intersect',
         eyebrow: 'alimentos con alma',
         body:
-          '"Kokoro" (corazón de las cosas) representa la unión entre el bienestar físico y el placer emocional de comer sin miedo.',
+          '"Kokoro"  representa la unión entre el bienestar físico y el placer emocional de comer sin miedo.',
       },
     ],
   },

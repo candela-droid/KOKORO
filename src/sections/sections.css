@@ -1613,13 +1613,13 @@
 }
 
 /* Frame columna (Figma 104:872): header arriba, cards abajo. El gap
-   simula los 128px del Figma; las cards consumen el espacio sobrante
-   con flex: 1 para mantener una altura cómoda independientemente de
-   cuántas líneas tenga el body. */
+   ahora es 64px (antes era clamp 48-128) para alinear con Figma —
+   el bloque entero queda más compacto y respira mejor con el padding
+   vertical del .section. */
 .vacio-frame {
   display: flex;
   flex-direction: column;
-  gap: clamp(48px, 8vw, 128px);
+  gap: clamp(48px, 6vw, 64px);
   width: 100%;
   max-width: 1440px;
   margin: 0 auto;
@@ -1627,20 +1627,24 @@
   min-height: 0;
 }
 
-/* Header — dos columnas: título Host 120 a la izq, body Mona Sans 24
-   alineado a la derecha. Gap 156px en Figma; clamp para no ahogarse en
-   viewports anchos. align-items: flex-end para que el body se "siente"
-   sobre la línea base del título a dos líneas. */
+/* Header — Figma 159:315 (`flex items-end justify-between`). Título Host
+   120 a la izq (`flex-shrink: 0`), body Mona Sans 20px width 508px
+   alineado a la derecha. `justify-content: space-between` ancla el body
+   al borde derecho independientemente del ancho del título.
+   `align-items: flex-end` deja la línea base del body sobre la base
+   del título a dos líneas. */
 .vacio-header {
   display: flex;
   align-items: flex-end;
-  gap: clamp(48px, 11vw, 156px);
+  justify-content: space-between;
+  gap: clamp(24px, 4vw, 48px);
   width: 100%;
   flex-shrink: 0;
 }
 
 .vacio-display-title {
   margin: 0;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   font-family: var(--font-display);
@@ -1658,12 +1662,16 @@
 }
 
 .vacio-display-body {
-  flex: 1 1 0;
-  min-width: 0;
+  /* Ancho fijo 508px desde Figma 159:317 (antes era flex:1 → llenaba
+     el sobrante variable). Con 508px el wrap del texto es estable
+     entre viewports y coincide con el diseño. min(508px, 100%) protege
+     viewports estrechos donde 508 supere el width disponible. */
+  flex: 0 0 auto;
+  width: min(508px, 100%);
   margin: 0;
   font-family: var(--font-body);
   font-weight: 400;
-  font-size: clamp(18px, 2vw, 24px);
+  font-size: clamp(18px, 1.6vw, 20px);
   line-height: 1.4;
   letter-spacing: -0.03em;
   color: var(--ink);
@@ -1700,7 +1708,9 @@
   display: flex;
   flex-direction: column;
   background: var(--glass-bg-soft);
-  border: 1px solid var(--border);
+  /* Figma 104:873 / 159:300 quita el border de las cards — sólo el bg
+     glass al 5% define la forma. El contraste contra el fondo de la
+     sección sigue siendo suficiente para que la card se lea. */
   border-radius: 24px;
   overflow: hidden;
   min-height: 0;
@@ -3493,11 +3503,15 @@ body.is-grabbing .vacio-pill {
 /* ==========================================================================
    Solución (Figma 159:318) — variante de `.intro-dual`
    --------------------------------------------------------------------------
-   El lado derecho (`.intro-dual-body`) es una lista vertical de 3 ítems.
-   Cada ítem lleva eyebrow IBM Plex Mono + body Mona Sans 24px con padding
-   asimétrico (px-32 py-24) que replica el espaciado del Figma 159:337.
-   No hay líneas separadoras: la jerarquía se construye con padding y
-   tipografía. */
+   Layout = row idéntico al Figma 159:318:
+     · Container: flex gap-156 items-start p-128 (heredado de .intro-dual)
+     · Título: Host Grotesk 120px tracking -4.8px line-0.8 nowrap (izq)
+     · Body: flex flex-[1_0_0] flex-col items-start min-w-px (dcha)
+       3 items SIN gap entre ellos — el padding interno (py-24) crea el
+       espaciado vertical visible. Cada item es column gap-12 con
+       eyebrow IBM Plex Mono 14px @ rgba(255,255,255,0.3) arriba y body
+       Mona Sans 24px tracking -0.72px line-1.4 debajo.
+   En móvil colapsa a column única vía la regla mobile de .intro-dual. */
 .solucion-list {
   gap: 0;
 }
