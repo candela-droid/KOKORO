@@ -2535,11 +2535,20 @@ export function ParaQue() {
   );
 }
 
-/* Proyección financiera (Figma 104:742 / 151:218)
-   Título grande "Proyección / financiera" 120px Host a 2 líneas
-   alineado a la izquierda (sin eyebrow). Debajo, rule-block con 3
-   escenarios separados por líneas verticales: eyebrow · número
-   grande · sub-label · pill de resultado coloreado. */
+/* Proyección financiera (Figma 104:742) — revisión 2026-05.
+   Cambios respecto al diseño anterior:
+     · Antes: rule-block con border-y y separadores verticales entre
+       3 celdas planas, con pills de colores (cons rojo / real azul /
+       agres verde).
+     · Ahora: 3 GLASS CARDS independientes con bg white-3 (sutil),
+       rounded-24, layout interno centrado (eyebrow · número · pill).
+       Pills unificadas — todas comparten bg white-10 sin color.
+     · Numbers llevan prefijo "+" (en lugar de número pelado).
+     · Label "Óptimo" pasa a "Optimista" (revisión de copy 2026-05).
+     · El número del escenario Realista baja de 130 a 120 tx/día.
+
+   Mobile sigue siendo el carrusel horizontal con dots — sólo cambia
+   el contenido y los pills (uniformes en lugar de coloreados). */
 export function ProyeccionFinanciera() {
   const titleLines = ['Proyección', 'financiera'];
   const escenarios = [
@@ -2547,31 +2556,28 @@ export function ProyeccionFinanciera() {
       key: 'cons',
       label: 'Conservador',
       number: 90,
-      sub: 'transacciónes / día',
+      sub: 'transacciones / día',
       result: 'Break even',
-      tone: 'cons',
     },
     {
       key: 'real',
       label: 'Realista',
-      number: 130,
-      sub: 'transacciónes / día',
+      number: 120,
+      sub: 'transacciones / día',
       result: '+ 2.500€ / mes',
-      tone: 'real',
     },
     {
       key: 'agres',
-      label: 'Óptimo',
+      label: 'Optimista',
       number: 180,
-      sub: 'transacciónes / día',
+      sub: 'transacciones / día',
       result: '+ 7.000€ / mes',
-      tone: 'agres',
     },
   ];
 
-  /* Mobile: carrusel horizontal de las mismas 3 cards con paginación de
-     puntitos (Figma 170:331). El desktop sigue usando el `.kk-rule-block`
-     con border-y #3c3c3c y separadores verticales. */
+  /* Mobile: carrusel horizontal de las mismas 3 cards con paginación
+     de puntitos (Figma 170:331). El desktop usa la grid `.caja-cards`
+     de 3 glass cards (Figma 104:742, revisión 2026-05). */
   const scrollerRef = useRef(null);
   const activeIdx = useScrollDots(scrollerRef, escenarios.length);
   const scrollToIdx = (i) => {
@@ -2599,41 +2605,44 @@ export function ProyeccionFinanciera() {
           ))}
         </h2>
 
-        {/* Desktop: rule-block */}
-        <div className="kk-rule-block kk-rule-block-num caja-desktop">
+        {/* Desktop: 3 glass cards (Figma 104:742). Patrón análogo al de
+            "Modelo de negocio" pero con contenido centrado vertical y
+            horizontalmente y un número grande como protagonista. */}
+        <div className="caja-cards caja-desktop">
           {escenarios.map((e, i) => (
-            <motion.div
+            <motion.article
               key={e.key}
-              className="kk-rule-cell caja-cell"
+              className="caja-card-g"
               variants={fade}
               custom={i}
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, margin: '-15% 0px' }}
             >
-              <span className="kk-eyebrow">{e.label}</span>
+              <span className="kk-eyebrow caja-card-eyebrow">{e.label}</span>
               <div className="caja-num-block">
                 <span className="caja-num">
-                  <CountUp to={e.number} duration={1.4} />
+                  +<CountUp to={e.number} duration={1.4} />
                 </span>
                 <span className="caja-sub mono">{e.sub}</span>
               </div>
-              <span className={`caja-pill caja-pill-${e.tone}`}>{e.result}</span>
-            </motion.div>
+              <span className="caja-pill">{e.result}</span>
+            </motion.article>
           ))}
         </div>
 
-        {/* Mobile: carrusel + dots */}
+        {/* Mobile: carrusel + dots (estructura sin cambios; sólo se
+            unifican los pills al mismo bg que desktop). */}
         <div className="caja-mobile">
           <div className="mobile-scroller" ref={scrollerRef}>
             {escenarios.map((e) => (
               <article key={e.key} className="mobile-card caja-card-m">
-                <span className="kk-eyebrow">{e.label}</span>
+                <span className="kk-eyebrow caja-card-eyebrow">{e.label}</span>
                 <div className="caja-num-block">
-                  <span className="caja-num">{e.number}</span>
+                  <span className="caja-num">+{e.number}</span>
                   <span className="caja-sub mono">{e.sub}</span>
                 </div>
-                <span className={`caja-pill caja-pill-${e.tone}`}>{e.result}</span>
+                <span className="caja-pill">{e.result}</span>
               </article>
             ))}
           </div>

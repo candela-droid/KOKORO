@@ -693,18 +693,24 @@
   transform-origin: bottom center;
 }
 
-/* Light theme: el dark glass de Figma sigue funcionando aquí (oscurece la
-   foto B/N detrás), pero el border blanco a 5% no se ve sobre cream, así
-   que lo cambiamos a tinta oscura sutil. Ink también pasa a oscuro para
-   que el nombre se lea sobre el cristal. */
+/* Light theme — la pill INVIERTE el patrón del dark theme: en lugar
+   de un glass oscuro que oscurece la foto B/N (con texto blanco
+   encima), pasamos a un glass CLARO sobre la foto con texto ink.
+   Razón: el texto ink oscuro sobre un overlay sólo ligeramente oscuro
+   (12% black) no tenía contraste suficiente en las zonas más claras
+   de los cutouts B/N (caras, ropa clara) — los nombres de Candela y
+   Olga apenas se leían. Con un glass blanco al ~60% el texto queda
+   bien aislado del fondo de la foto independientemente de la zona
+   sobre la que caiga la pill. El backdrop-filter blur(10px) heredado
+   del base refuerza el efecto frosted. */
 :root[data-theme='light'] .equipo-member-pill {
-  background: rgba(0, 0, 0, 0.12);
-  border-color: rgba(11, 11, 11, 0.1);
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(11, 11, 11, 0.08);
   color: var(--ink);
 }
 :root[data-theme='light'] .equipo-member-pill:hover {
-  background: rgba(0, 0, 0, 0.22);
-  border-color: rgba(11, 11, 11, 0.18);
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(11, 11, 11, 0.16);
 }
 
 @media (max-width: 900px) {
@@ -2420,14 +2426,53 @@ body.is-grabbing .vacio-pill {
    Caja desde el primer día (104:742) — proyección financiera
    ========================================================================== */
 
-/* Variante de kk-rule-block para celdas con número grande (gap 24, items center) */
-.kk-rule-block-num .kk-rule-cell {
-  padding: 64px 32px;
+/* Caja desde el primer día — Proyección financiera (Figma 104:742,
+   revisión 2026-05).
+   --------------------------------------------------------------------------
+   3 glass cards independientes con fondo white-3 (alpha 0.03) — más
+   sutil que las cards de "Modelo de negocio" (white-5) para reforzar
+   que aquí el protagonista visual es el número, no el contenedor.
+   Cada card es flex column centrado (items + justify) con altura
+   fija 414px y padding px-32 py-64. Dentro, 3 elementos apilados con
+   gap-32: eyebrow mono 20px + número 100px + sub 16px + pill 14px. */
+.caja-cards {
+  display: flex;
   gap: 24px;
+  width: 100%;
+  align-items: center;
+  height: clamp(340px, 32vw, 414px);
 }
 
-.caja-cell {
-  /* hereda kk-rule-cell */
+.caja-card-g {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: clamp(32px, 5vw, 64px) clamp(20px, 2.4vw, 32px);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  height: 100%;
+}
+
+:root[data-theme='light'] .caja-card-g {
+  background: rgba(11, 11, 11, 0.03);
+}
+
+/* Eyebrow del card de proyección. Figma 194:118 lo sube a 20px (vs
+   los 14px del `.kk-eyebrow` base) y deja el alpha 0.3 sobre blanco.
+   En tema claro invertimos al ink negro con 0.4 para mantener un
+   contraste suave equivalente. */
+.caja-card-eyebrow {
+  font-size: 20px;
+  letter-spacing: 0;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+:root[data-theme='light'] .caja-card-eyebrow {
+  color: rgba(11, 11, 11, 0.4);
 }
 
 .caja-num-block {
@@ -2438,7 +2483,10 @@ body.is-grabbing .vacio-pill {
   width: 100%;
 }
 
-/* Número 100px Host Grotesk tracking -4px (≈ -0.04em) line 0.8 */
+/* Número 100px Host Grotesk tracking -4px (≈ -0.04em) line 0.8.
+   El prefijo "+" del Figma se añade desde el JSX (literal antes del
+   <CountUp>) — no via `::before` para que respete la animación del
+   contador. */
 .caja-num {
   font-family: var(--font-display);
   font-weight: 400;
@@ -2450,23 +2498,34 @@ body.is-grabbing .vacio-pill {
   font-feature-settings: 'tnum' on, 'dlig' 1;
 }
 
+/* Sub-label "transacciones / día". Mona Sans 16px (Figma 194:121,
+   revisión 2026-05; antes era 12px) en color de eyebrow (~30% alpha
+   sobre blanco / 40% sobre negro). */
 .caja-sub {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1;
   letter-spacing: -0.02em;
   text-transform: lowercase;
-  color: var(--eyebrow);
+  color: rgba(255, 255, 255, 0.3);
   text-align: center;
 }
 
-/* Pill de resultado coloreado */
+:root[data-theme='light'] .caja-sub {
+  color: rgba(11, 11, 11, 0.4);
+}
+
+/* Pill de resultado — JetBrains Mono 14px uppercase white sobre bg
+   white-10. Antes había 3 variantes coloreadas (rojo/azul/verde) por
+   escenario; la revisión 2026-05 unifica todas al mismo glass para
+   que el énfasis visual quede en el NÚMERO grande, no en la pill. */
 .caja-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 12px 16px;
   border-radius: 99px;
+  background: rgba(255, 255, 255, 0.1);
   font-family: var(--font-mono);
   font-size: 14px;
   line-height: 1;
@@ -2477,19 +2536,8 @@ body.is-grabbing .vacio-pill {
   font-feature-settings: 'dlig' 1;
 }
 
-/* Conservador — rojo suave (Figma rgba(227,71,60,0.2)) */
-.caja-pill-cons {
-  background: rgba(227, 71, 60, 0.2);
-}
-
-/* Realista — azul (Figma rgba(34,69,115,0.4)) */
-.caja-pill-real {
-  background: rgba(34, 69, 115, 0.4);
-}
-
-/* Óptimo — verde (Figma rgba(66,255,107,0.2)) */
-.caja-pill-agres {
-  background: rgba(66, 255, 107, 0.2);
+:root[data-theme='light'] .caja-pill {
+  background: rgba(11, 11, 11, 0.1);
 }
 
 /* ==========================================================================
@@ -3621,8 +3669,13 @@ body.is-grabbing .vacio-pill {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  /* `justify-content: space-between` reparte el hueco entre eyebrow y
+     body en función de la altura disponible del card. NO usar `gap`
+     aquí: si lo añades, fija un mínimo entre elementos que se suma a
+     space-between y, cuando el body es largo, el contenido acaba
+     desbordando el contenedor. El hueco lo decide el alto, no un
+     valor explícito. */
   justify-content: space-between;
-  gap: clamp(64px, 12vw, 160px);
   padding: 32px;
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.05);
