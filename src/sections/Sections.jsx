@@ -19,6 +19,7 @@ import {
   brand,
   kokoroMeaning,
   ejecutivo,
+  mvpIntro,
   problema,
   gap,
   mision,
@@ -28,6 +29,7 @@ import {
   canvas,
   kiosco,
   fases,
+  paraQue,
   referencias,
   contacto,
   negocio,
@@ -42,14 +44,7 @@ import {
   ArrowOutward,
   ChevronLeft,
   ChevronRight,
-  Intersect,
-  Repeat,
-  Tag,
 } from '../components/Icons.jsx';
-
-/* Mapping para resolver el icono por slug en data (Sección "La solución
-   disruptiva" — content.solucion.cells[i].icon). */
-const SOLUCION_ICONS = { repeat: Repeat, tag: Tag, intersect: Intersect };
 import './sections.css';
 
 const fade = {
@@ -218,10 +213,17 @@ export function KokoroMeaning() {
 }
 
 /* ---------------------- QUÉ ES (Figma 151:215) ----------------------
-   Layout a dos columnas (mismo patrón que MvpIntro): título Host 120px
-   a la izquierda + body 28px a la derecha. Padding 128 / gap 156.
-   Body en dos párrafos Mona Sans con fragmento en Instrument Serif
-   italic intercalado en el primero. */
+   Layout a dos columnas: título Host 120px a la izquierda + body 24px
+   a la derecha. Padding 128 / gap 156.
+
+   Revisión 2026-05: el cuerpo pasa de "intro + italic inline / closer"
+   a 3 párrafos:
+     · intro — regular
+     · (gap visual)
+     · closer — regular
+     · italic — Instrument Serif Italic standalone, pegado al closer
+   El cluster `.intro-dual-cluster` agrupa closer + italic para que
+   queden contiguos sin el gap por defecto entre paragrafos. */
 export function Resumen() {
   return (
     <section id="que-es" className="section" data-slide>
@@ -239,11 +241,13 @@ export function Resumen() {
           whileInView="show"
           viewport={{ once: true, margin: '-15% 0px' }}
         >
-          <p className="intro-dual-para">
-            {ejecutivo.intro}{' '}
-            <span className="intro-dual-italic">{ejecutivo.italic}</span>
-          </p>
-          <p className="intro-dual-para">{ejecutivo.closer}</p>
+          <p className="intro-dual-para">{ejecutivo.intro}</p>
+          <div className="intro-dual-cluster">
+            <p className="intro-dual-para">{ejecutivo.closer}</p>
+            <p className="intro-dual-para intro-dual-italic-para">
+              {ejecutivo.italic}
+            </p>
+          </div>
         </motion.div>
       </div>
     </section>
@@ -253,7 +257,7 @@ export function Resumen() {
 /* ---------------------- TABBED REVEAL ------------------------------
    Componente compartido por "Sobre Kokoro" (Figma 151:192) y "Roadmap"
    (Figma 151:201). Layout idéntico — título a dos líneas, fila de tabs,
-   body 28px ancho 672px — y misma mecánica de interacción.
+   body 24px ancho 672px — y misma mecánica de interacción.
 
    Detalles importantes de la interacción:
 
@@ -540,14 +544,26 @@ export function Roadmap() {
 
 /* ---------------------- MVP INTRO (Figma 151:212) ----------------
    Mismo layout que "Qué es": 2 columnas Host 120px (izquierda, en
-   tres líneas Mínimo / Producto / Viable) + body 28px Mona Sans con
+   tres líneas Mínimo / Producto / Viable) + body 24px Mona Sans con
    fragmento en Instrument Serif italic. Reusa las clases compartidas
-   .intro-dual-* para no duplicar CSS. */
+   .intro-dual-* para no duplicar CSS. (P1 bajó de 28px a 24px en la
+   revisión 2026-05.)
+
+   Copy: consume `mvpIntro` de content.js — bloque específico del MVP
+   ("KOKORO arranca como una cafetería de specialty coffee en
+   Madrid…"). Hasta la revisión 2026-05 esta sección compartía el
+   body con "Qué es" (Resumen → ejecutivo) — ahora cada una tiene su
+   voz. */
 export function MvpIntro() {
   const titleLines = ['Mínimo', 'Producto', 'Viable'];
   return (
     <section id="mvp-intro" className="section" data-slide>
-      <div className="intro-dual">
+      {/* `intro-dual-bottom` ancla el body al pie del título (3 líneas
+          Mínimo/Producto/Viable). En "Qué es" (Resumen) el body
+          arranca arriba (items-start por defecto); aquí va abajo
+          (items-end) para que la última línea del body quede a la
+          altura de "Viable". */}
+      <div className="intro-dual intro-dual-bottom">
         <h2 className="intro-dual-title">
           {titleLines.map((line, i) => (
             <RevealText
@@ -569,10 +585,10 @@ export function MvpIntro() {
           viewport={{ once: true, margin: '-15% 0px' }}
         >
           <p className="intro-dual-para">
-            {ejecutivo.intro}{' '}
-            <span className="intro-dual-italic">{ejecutivo.italic}</span>
+            {mvpIntro.intro}{' '}
+            <span className="intro-dual-italic">{mvpIntro.italic}</span>
           </p>
-          <p className="intro-dual-para">{ejecutivo.closer}</p>
+          <p className="intro-dual-para">{mvpIntro.closer}</p>
         </motion.div>
       </div>
     </section>
@@ -1317,17 +1333,17 @@ export function Kiosco() {
   );
 }
 
-/* ----------------------- PLAN A 3 AÑOS --------------------------- */
+/* ----------------------- PLAN A 2 AÑOS --------------------------- */
 export function Fases() {
   return (
     <section id="fases" className="section" data-slide>
       <div className="section-wide">
         <div className="section-eyebrow-row">
-          <span className="mono">02 — Visión a 3 años</span>
+          <span className="mono">02 — Visión a 2 años</span>
           <span className="mono muted">Plan faseado</span>
         </div>
         <RevealText as="h2" className="display section-display-title">
-          Del kiosco a la marca completa.
+          Del local a la marca completa.
         </RevealText>
         <div className="cells cells-4 fases-grid">
           {fases.map((f, i) => (
@@ -2012,62 +2028,145 @@ export function VacioMercado() {
   );
 }
 
-/* Solución (Figma 159:318) — título Host 120px alineado a la IZQUIERDA +
-   stack vertical de 3 ítems a la derecha. Cada ítem: eyebrow IBM Plex Mono
-   uppercase 14px + body Mona Sans 24px tracking -0.72px line 1.4.
-   Sin iconos, sin lineas separadoras horizontales — la jerarquía se
-   construye sólo con la tipografía y el padding interno (px-32 py-24).
-   Reusa el contenedor `.intro-dual` (mismo layout que "Qué es") con la
-   nueva clase `.solucion-list` para los 3 ítems del lado derecho. */
-export function SolucionDisruptiva() {
-  /* La sección usa el wrapper `.intro-dual` pero con modificador
-     `.intro-dual-left`: en móvil no se centra (como hacen "Qué es" y
-     "MVP intro") sino que se alinea a la izquierda, según pidió el
-     cliente. En desktop el modificador no cambia nada — sigue siendo
-     row con título-izq + ítems-dcha (Figma 159:318). */
+/* "Por qué no está resuelto" (Figma 194:2 desktop · 194:96 mobile) —
+   módulo de la página negocio. Mismo lenguaje tipográfico que el resto
+   de la /modelo: título display Host 120px a 2 líneas (line-height 0.8,
+   tracking -4.8px, ancho máximo 696px para forzar el wrap "Por qué no /
+   está resuelto") + bloque de cuerpo Mona Sans 24px (tres frases que
+   arrancan con "Porque…") y cierre en Instrument Serif italic (dos
+   líneas). En móvil el título baja a 60px (regla global compartida con
+   .kk-title-xl) y el cuerpo se unifica a 16px line 1.5 como el resto
+   de bodies del site (decisión de mayo 2026 — ver bloque de tipografía
+   móvil al final del CSS). P1 bajó de 28px a 24px en la revisión
+   2026-05. */
+export function NegocioResuelto() {
+  const { title, body, italic } = negocio.resuelto;
   return (
-    <section id="solucion" className="section section-solucion" data-slide>
-      <div className="intro-dual intro-dual-left">
-        <h2 className="intro-dual-title">
-          <RevealText as="span" className="intro-dual-title-line">
-            {negocio.solucion.title}
-          </RevealText>
-        </h2>
+    <section id="resuelto" className="section" data-slide>
+      <div className="kk-stack kk-stack-128">
         <motion.div
-          className="intro-dual-body solucion-list"
+          className="kk-header"
+          variants={fade}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-15% 0px' }}
+        >
+          <h2 className="kk-title-xl resuelto-title">
+            {title.map((line, i) => (
+              <RevealText
+                key={line}
+                as="span"
+                className="resuelto-title-line"
+                delay={i * 0.08}
+              >
+                {line}
+              </RevealText>
+            ))}
+          </h2>
+        </motion.div>
+
+        <motion.div
+          className="resuelto-body"
           variants={fade}
           custom={1}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: '-15% 0px' }}
         >
-          {negocio.solucion.cells.map((c) => (
-            <div key={c.eyebrow} className="solucion-item">
-              <span className="kk-eyebrow">{c.eyebrow}</span>
-              <p className="solucion-item-body">{c.body}</p>
-            </div>
-          ))}
+          <div className="resuelto-body-block">
+            {body.map((p, i) => (
+              <p key={i} className="resuelto-body-line">
+                {p}
+              </p>
+            ))}
+          </div>
+          <div className="resuelto-body-block resuelto-body-italic">
+            {italic.map((p, i) => (
+              <p key={i} className="resuelto-body-line">
+                {p}
+              </p>
+            ))}
+          </div>
         </motion.div>
       </div>
     </section>
   );
 }
 
-/* Modelo de negocio (Figma 137:100) — título Host 120px centrado +
-   bloque border-y #222 con 3 columnas separadas por línea vertical
-   fina. Cada columna: eyebrow IBM Plex Mono uppercase 14px + body Mona
-   Sans 24px CENTRADO. Sin glass cards: el rule-block es el contenedor.
-   Reusa `.kk-rule-block` / `.kk-rule-cell` (mismo patrón que Problema
-   pero con 3 cells de body 24px en vez de 18px). */
+/* Solución disruptiva (Figma 159:318) — versión revisada.
+   Antes era el patrón intro-dual (título-izq + lista-dcha con eyebrow +
+   body). Ahora comparte exactamente el mismo layout que "Nuestra
+   ventaja": kk-stack-128 con header (título display 120px a 2 líneas
+   "Solución / disruptiva") + lista de filas con HR. Cada fila trae el
+   título corto a la izquierda (Host Medium 24px, ancho 300px) y un
+   body Mona Sans 20px alineado a la izquierda que se expande con
+   flex-1. Sin iconos, sin eyebrows. */
+export function SolucionDisruptiva() {
+  const { title, cells } = negocio.solucion;
+  return (
+    <section id="solucion" className="section section-solucion" data-slide>
+      <div className="kk-stack kk-stack-128">
+        <motion.div
+          className="kk-header"
+          variants={fade}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-15% 0px' }}
+        >
+          <h2 className="kk-title-xl solucion-title">
+            {title.map((line, i) => (
+              <RevealText
+                key={line}
+                as="span"
+                className="solucion-title-line"
+                delay={i * 0.08}
+              >
+                {line}
+              </RevealText>
+            ))}
+          </h2>
+        </motion.div>
+
+        <div className="ventaja-rows">
+          {cells.map((c, i) => (
+            <Fragment key={c.title}>
+              {i > 0 && <span className="ventaja-rule" aria-hidden="true" />}
+              <motion.div
+                className="ventaja-row"
+                variants={fade}
+                custom={i}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: '-15% 0px' }}
+              >
+                <h3 className="ventaja-row-title">{c.title}</h3>
+                <p className="ventaja-row-body">{c.body}</p>
+              </motion.div>
+            </Fragment>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* Modelo de negocio (Figma 137:100) — revisión 2026-05.
+   Layout COMPARTIDO con "Para qué" (/mvp, Figma 194:61): título
+   display Host 120px alineado a la izquierda + 3 GLASS CARDS
+   rounded-24 con fondo white-5. Dentro de cada card: eyebrow IBM
+   Plex Mono 16px @ 30% alpha anclado arriba, body Mona Sans 18px
+   tracking -0.54px anclado abajo, separados por `justify-content:
+   space-between`. Cards de altura fija h-[350px] (antes 414px) y gap
+   entre header y row de cards 90px (antes 128px). El layout móvil
+   sigue siendo el carrusel horizontal con dots. */
 export function MotorEscala() {
   const { title, main, side } = negocio.revenue;
   const cards = [main, ...side];
-  /* En desktop renderizamos el `.kk-rule-block` (border-y + separadores
-     verticales — Figma 137:100). En móvil sustituimos por un carrusel
-     horizontal de glass cards con paginación de puntitos (Figma 170:205).
-     Ambos layouts conviven en el JSX; CSS conmuta visibilidad por
-     breakpoint. El carrusel usa scroll-snap nativo y el hook
-     useScrollDots para reflejar el card visible. */
+  /* En desktop renderizamos el grid de 3 cards (.motor-cards · Figma
+     137:100). En móvil sustituimos por un carrusel horizontal con
+     paginación de puntitos (Figma 170:205). Ambos layouts conviven en
+     el JSX; CSS conmuta visibilidad por breakpoint. El carrusel usa
+     scroll-snap nativo y el hook useScrollDots. */
   const scrollerRef = useRef(null);
   const activeIdx = useScrollDots(scrollerRef, cards.length);
   const scrollToIdx = (i) => {
@@ -2080,35 +2179,46 @@ export function MotorEscala() {
   };
 
   return (
-    <section id="motor" className="section" data-slide>
-      <div className="kk-stack kk-stack-128 kk-stack-center">
+    <section id="motor" className="section section-motor" data-slide>
+      <div className="kk-stack motor-stack">
         <motion.div
-          className="kk-header kk-header-center"
+          className="kk-header"
           variants={fade}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: '-15% 0px' }}
         >
-          <RevealText as="h2" className="kk-title-xl kk-title-center motor-title">
-            {title}
-          </RevealText>
+          <h2 className="kk-title-xl motor-title">
+            {title.map((line, i) => (
+              <RevealText
+                key={line}
+                as="span"
+                className="motor-title-line"
+                delay={i * 0.08}
+              >
+                {line}
+              </RevealText>
+            ))}
+          </h2>
         </motion.div>
 
-        {/* Desktop: rule-block */}
-        <div className="kk-rule-block kk-rule-block-lg motor-desktop">
+        {/* Desktop: 3 glass cards */}
+        <div className="motor-cards motor-desktop">
           {cards.map((c, i) => (
-            <motion.div
+            <motion.article
               key={c.eyebrow}
-              className="kk-rule-cell"
+              className="motor-card-g"
               variants={fade}
               custom={i}
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, margin: '-15% 0px' }}
             >
-              <span className="kk-eyebrow">{c.eyebrow}</span>
-              <p className="motor-cell-body">{c.body}</p>
-            </motion.div>
+              <span className="kk-eyebrow motor-card-g-eyebrow">
+                {c.eyebrow}
+              </span>
+              <p className="motor-card-g-body">{c.body}</p>
+            </motion.article>
           ))}
         </div>
 
@@ -2117,7 +2227,9 @@ export function MotorEscala() {
           <div className="mobile-scroller" ref={scrollerRef}>
             {cards.map((c) => (
               <article key={c.eyebrow} className="mobile-card motor-card-m">
-                <h3 className="motor-card-m-title">{c.eyebrow}</h3>
+                <span className="kk-eyebrow motor-card-g-eyebrow">
+                  {c.eyebrow}
+                </span>
                 <p className="motor-card-m-body">{c.body}</p>
               </article>
             ))}
@@ -2135,9 +2247,10 @@ export function MotorEscala() {
 
 /* Nuestra ventaja (Figma 137:132 / 151:131) — título grande a la izquierda
    (Host 120px tracking -4.8px, ancho 672) + filas con divider horizontal.
-   Cada fila: título-izquierda (Host Medium 24px) · body-derecha alineado
-   a la derecha (Mona Sans 20px tracking -0.6px, ancho 400). HR finos
-   entre cada par de filas. */
+   Cada fila: título-izquierda (Host Medium 24px ancho 300) · body-derecha
+   alineado a la IZQUIERDA en flex-1 (Mona Sans 20px tracking -0.6px line
+   1.4). HR finos entre cada par de filas. Mismo layout que la sección
+   "Solución disruptiva" — ambas comparten `.ventaja-rows` / `.ventaja-row`. */
 export function VentajaCompetitiva() {
   const { title, items } = negocio.ventaja;
   return (
@@ -2336,6 +2449,86 @@ export function PlanFaseado() {
           >
             <ChevronRight size={16} />
           </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* "Para qué" (Figma 194:61 desktop · 194:74 mobile) — módulo de la
+   página /mvp. Explica los tres motivos estratégicos por los que el
+   primer local existe como formato (punto de adquisición · showroom ·
+   motor de contenido). Visualmente IDÉNTICO a "Modelo de negocio":
+   título display Host 120px alineado a la izquierda + 3 GLASS CARDS
+   rounded-24 (eyebrow IBM Plex Mono 16px @ 30% alpha arriba y body
+   Mona Sans 18px abajo, justify-between). Revisión 2026-05: ambas
+   secciones ahora comparten el mismo layout, gap (90px) y altura de
+   cards (350px). En móvil el bloque cae al mismo carrusel + dots. */
+export function ParaQue() {
+  const { title, cells } = paraQue;
+  const scrollerRef = useRef(null);
+  const activeIdx = useScrollDots(scrollerRef, cells.length);
+  const scrollToIdx = (i) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const first = el.firstElementChild;
+    const cardW = first ? first.getBoundingClientRect().width : el.clientWidth;
+    const gap = parseFloat(getComputedStyle(el).columnGap || 0) || 0;
+    el.scrollTo({ left: (cardW + gap) * i, behavior: 'smooth' });
+  };
+
+  return (
+    <section id="para-que" className="section" data-slide>
+      <div className="kk-stack motor-stack">
+        <motion.div
+          className="kk-header"
+          variants={fade}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-15% 0px' }}
+        >
+          <RevealText as="h2" className="kk-title-xl motor-title">
+            {title}
+          </RevealText>
+        </motion.div>
+
+        {/* Desktop: 3 glass cards */}
+        <div className="motor-cards motor-desktop">
+          {cells.map((c, i) => (
+            <motion.article
+              key={c.eyebrow}
+              className="motor-card-g"
+              variants={fade}
+              custom={i}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: '-15% 0px' }}
+            >
+              <span className="kk-eyebrow motor-card-g-eyebrow">
+                {c.eyebrow}
+              </span>
+              <p className="motor-card-g-body">{c.body}</p>
+            </motion.article>
+          ))}
+        </div>
+
+        {/* Mobile: carrusel + dots */}
+        <div className="motor-mobile">
+          <div className="mobile-scroller" ref={scrollerRef}>
+            {cells.map((c) => (
+              <article key={c.eyebrow} className="mobile-card motor-card-m">
+                <span className="kk-eyebrow motor-card-g-eyebrow">
+                  {c.eyebrow}
+                </span>
+                <p className="motor-card-m-body">{c.body}</p>
+              </article>
+            ))}
+          </div>
+          <MobileDots
+            count={cells.length}
+            active={activeIdx}
+            onSelect={scrollToIdx}
+          />
         </div>
       </div>
     </section>

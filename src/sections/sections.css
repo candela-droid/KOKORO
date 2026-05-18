@@ -444,7 +444,10 @@
   text-align: right;
   font-family: var(--font-body);
   font-weight: 400;
-  font-size: clamp(16px, 1.4vw, 20px);
+  /* Subido de clamp(16-20px) a clamp(18-24px) en la revisión 2026-05
+     — el intro de Equipo se alinea con los demás bodies destacados
+     del site (24px desktop / 16px móvil). */
+  font-size: clamp(18px, 1.8vw, 24px);
   line-height: 1.4;
   letter-spacing: -0.03em;
   color: var(--ink);
@@ -825,7 +828,13 @@
   /* Foto: aspect-ratio 345/375 (Figma 176:534). Bg glass para el caso
      en que la imagen tarde en cargar o falle — el card sigue teniendo
      forma visible. border-radius 24px sobre overflow:hidden recorta la
-     img al contorno. */
+     img al contorno.
+
+     Tema oscuro: white-5 sobre el bg casi-negro de la sección — el
+     contenedor se ve como un highlight sutil detrás de la foto B/N.
+     Tema claro: invertimos a black-5 sobre el cream de la sección
+     para mantener exactamente el MISMO contraste relativo (el cutout
+     B/N se sigue leyendo sobre un fondo ligeramente más oscuro). */
   .equipo-card-m-photo {
     position: relative;
     width: 100%;
@@ -833,6 +842,10 @@
     background: rgba(255, 255, 255, 0.05);
     border-radius: 24px;
     overflow: hidden;
+  }
+
+  :root[data-theme='light'] .equipo-card-m-photo {
+    background: rgba(11, 11, 11, 0.05);
   }
 
   .equipo-card-m-photo img {
@@ -1600,31 +1613,28 @@
    ========================================================================== */
 
 .section.section-vacio {
-  /* Override del padding-y de .section (clamp 64-128): el Figma 104:872
-     pide 128px arriba y abajo SIEMPRE — y los containers de las cards
-     deben adaptarse a lo que sobra. Si dejásemos el clamp, en viewports
-     estrechos el padding bajaba y la sección se descuadraba respecto al
-     resto del sitio. El horizontal sí escala (clamp), porque ahí el
-     viewport sí condiciona si cabe el header en dos columnas. */
-  padding-top: 128px;
-  padding-bottom: 128px;
+  /* Hereda el padding `clamp(64px, 10vw, 128px)` del `.section` base —
+     el módulo se alinea con el resto de la página. No estiramos las
+     cards verticalmente: el contenido queda centrado en la sección
+     y respira con el padding vertical estándar. */
   overflow: hidden;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
-/* Frame columna (Figma 104:872): header arriba, cards abajo. El gap
-   ahora es 64px (antes era clamp 48-128) para alinear con Figma —
-   el bloque entero queda más compacto y respira mejor con el padding
-   vertical del .section. */
+/* Frame columna (Figma 104:872): header arriba, cards abajo. Gap 64px
+   (Figma `gap-[64px]`). `max-width: 1184px` alinea el ancho del
+   contenido con el resto de bloques del site (.intro-dual, headers de
+   Solución/Ventaja) — antes eran 1440px y las cards se sentían más
+   anchas que en el diseño porque sobraban ~256px respecto a los
+   módulos vecinos. */
 .vacio-frame {
   display: flex;
   flex-direction: column;
   gap: clamp(48px, 6vw, 64px);
   width: 100%;
-  max-width: 1440px;
+  max-width: 1184px;
   margin: 0 auto;
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
 }
 
 /* Header — Figma 159:315 (`flex items-end justify-between`). Título Host
@@ -1662,16 +1672,16 @@
 }
 
 .vacio-display-body {
-  /* Ancho fijo 508px desde Figma 159:317 (antes era flex:1 → llenaba
-     el sobrante variable). Con 508px el wrap del texto es estable
-     entre viewports y coincide con el diseño. min(508px, 100%) protege
-     viewports estrechos donde 508 supere el width disponible. */
+  /* Ancho fijo 508px desde Figma 159:317. Con 508px el wrap del texto
+     es estable entre viewports y coincide con el diseño. min(508px,
+     100%) protege viewports estrechos donde 508 supere el width
+     disponible. Font 24px (tracking -0.72px) — Figma 159:317. */
   flex: 0 0 auto;
   width: min(508px, 100%);
   margin: 0;
   font-family: var(--font-body);
   font-weight: 400;
-  font-size: clamp(18px, 1.6vw, 20px);
+  font-size: clamp(18px, 1.8vw, 24px);
   line-height: 1.4;
   letter-spacing: -0.03em;
   color: var(--ink);
@@ -1679,29 +1689,25 @@
   font-feature-settings: 'ordn' 1, 'ss01' 1, 'ss05' 1, 'ss06' 1, 'dlig' 1;
 }
 
-/* Layout de las dos cards: flex 1:1 con gap 24px (Figma). Ahora vive
-   dentro de .vacio-frame, así que en lugar de tener max-width propio
-   hereda el del frame y crece verticalmente con flex: 1. */
+/* Layout de las dos cards: flex 1:1 con gap 24px (Figma). Altura
+   fija proporcional al diseño (Figma 104:872 ≈ 380px tall). Con un
+   clamp(320→440px) las cards quedan compactas como en el diseño y
+   dejan de estirarse al alto del viewport (en pantallas altas
+   sobraba aire vertical y se sentían enormes respecto al resto de
+   módulos). */
 .vacio-split {
-  flex: 1 1 0;
   display: flex;
   align-items: stretch;
   gap: 24px;
   width: 100%;
-  min-height: 0;
+  height: clamp(320px, 38vh, 440px);
 }
 
 /* Card individual — wrapper redondeado glass que actúa como caja del
    simulador (sus límites son los muros del PhysicsPile). overflow:
    hidden recorta cualquier pill que escape, manteniendo el radio 24.
-   SIN min-height en desktop: la altura se adapta al espacio que sobra
-   en la sección tras restar padding 128 top/bottom y el header. La
-   cadena flex es:
-     section (100vh, padding 128) → frame (flex column, flex:1)
-       → split (flex row, flex:1) → card (flex:1 row, min-height:0)
-   El min-height:0 es lo que permite que el card se comprima por debajo
-   de su tamaño "natural" cuando el frame manda — sin él, los flex hijos
-   se quedan en su intrinsic min-content y la card no encoge. */
+   La altura la marca `.vacio-split`; cada card crece a 100% de la
+   fila. */
 .vacio-card {
   flex: 1 1 0;
   position: relative;
@@ -1713,7 +1719,8 @@
      sección sigue siendo suficiente para que la card se lea. */
   border-radius: 24px;
   overflow: hidden;
-  min-height: 0;
+  height: 100%;
+  min-width: 0;
 }
 
 /* Cabecera con el título "Pains"/"Gains". z-index bajo (1) para que
@@ -1875,6 +1882,9 @@ body.is-grabbing .vacio-pill {
     flex-direction: row;
     align-items: stretch;
     gap: 16px;
+    /* Reset del height fijo de desktop — en móvil la altura la marca
+       el `min-height: 414px` del card, no el contenedor. */
+    height: auto;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
@@ -2923,7 +2933,7 @@ body.is-grabbing .vacio-pill {
    - Título display 120px (kk-title-xl) — versión grande del kk-title.
    - que-es-* — sección con stack alineado a la derecha (items-end).
    - sobre-* / .section-sobre — sección con stack alineado a la izquierda,
-     título a dos líneas, fila de tabs, body 28px.
+     título a dos líneas, fila de tabs, body 24px.
    ========================================================================== */
 
 /* Título display 120px (Host Grotesk tracking -4.8px line 0.8) */
@@ -2942,12 +2952,14 @@ body.is-grabbing .vacio-pill {
    Patrón a 2 columnas compartido por ambas secciones:
      · Título Host 120px (1 o varias líneas con .intro-dual-title-line)
        a la izquierda, flex-shrink 0 — no se rompe al achicar.
-     · Body 28px Mona Sans a la derecha (flex-1 / min-width 0). Dos
+     · Body 24px Mona Sans a la derecha (flex-1 / min-width 0). Dos
        párrafos con fragmento Instrument Serif italic intercalado en
        el primero.
      · Gap 156px entre columnas, padding 128 alrededor (heredado del
        .section).
-   En móvil colapsa a columna única. */
+   En móvil colapsa a columna única. P1 bajó de 28px a 24px en la
+   revisión 2026-05 (Figma sigue marcando 28; en web mantenemos 24
+   por densidad). */
 .intro-dual {
   display: flex;
   align-items: flex-start;
@@ -2980,12 +2992,12 @@ body.is-grabbing .vacio-pill {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: clamp(20px, 2vw, 28px);
+  gap: clamp(20px, 2vw, 24px);
 }
 
 .intro-dual-para {
   font-family: var(--font-body);
-  font-size: clamp(20px, 2vw, 28px);
+  font-size: clamp(20px, 2vw, 24px);
   font-weight: 400;
   line-height: 1.4;
   letter-spacing: -0.03em;
@@ -2999,6 +3011,49 @@ body.is-grabbing .vacio-pill {
   line-height: inherit;
   letter-spacing: -0.01em;
   color: var(--ink);
+}
+
+/* Cluster que agrupa closer + italic en "Qué es" (Figma 151:215) sin
+   gap entre paragrafos — para que el remate italic quede pegado al
+   closer como una sola unidad de cierre. El padre `.intro-dual-body`
+   sigue marcando el gap entre el intro (primer párrafo) y este
+   cluster, así que el resultado visual es: intro · gap · {closer +
+   italic contiguos}. */
+.intro-dual-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Párrafo italic standalone — Instrument Serif Italic. Hereda
+   font-size / line-height de `.intro-dual-para` para alinear
+   verticalmente con el closer (mismo cuerpo, sólo cambia la fuente y
+   el estilo). */
+.intro-dual-italic-para {
+  font-family: var(--font-serif);
+  font-style: italic;
+  letter-spacing: -0.01em;
+  font-feature-settings: 'ordn' 1;
+}
+
+/* Modificador `intro-dual-bottom` — ancla el body al pie del título
+   en lugar del top por defecto. Se usa en "Mínimo Producto Viable"
+   (MvpIntro, /mvp): el título tiene 3 líneas y el body cabe en
+   menos, así que con `align-items: flex-end` la última línea del
+   body queda a la altura de "Viable" — visualmente más equilibrado
+   que el body flotando arriba con espacio vacío debajo. */
+.intro-dual-bottom {
+  align-items: flex-end;
+}
+
+@media (max-width: 900px) {
+  /* En móvil el wrapper colapsa a columna y el modificador `-bottom`
+     deja de tener efecto (no hay dos columnas que alinear). Lo
+     reseteamos por claridad — equivalente al items-start mobile que
+     ya tenía `.intro-dual` por defecto. */
+  .intro-dual-bottom {
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 900px) {
@@ -3154,16 +3209,17 @@ body.is-grabbing .vacio-pill {
   width: 751px;
 }
 
-/* Body Mona Sans 28px tracking -0.84px line 1.4 ancho 672px.
-   grid-area 1/1 apila todos los párrafos en la misma celda; el activo
-   se ve y los inactivos quedan invisibles pero ocupando espacio. */
+/* Body Mona Sans 24px tracking -0.72px line 1.4 ancho 672px (P1 bajó
+   de 28px a 24px en la revisión 2026-05). grid-area 1/1 apila todos
+   los párrafos en la misma celda; el activo se ve y los inactivos
+   quedan invisibles pero ocupando espacio. */
 .sobre-body {
   grid-column: 1;
   grid-row: 1;
   margin: 0;
   font-family: var(--font-body);
   font-weight: 400;
-  font-size: clamp(20px, 2vw, 28px);
+  font-size: clamp(20px, 2vw, 24px);
   line-height: 1.4;
   letter-spacing: -0.03em;
   color: var(--ink);
@@ -3501,57 +3557,27 @@ body.is-grabbing .vacio-pill {
 }
 
 /* ==========================================================================
-   Solución (Figma 159:318) — variante de `.intro-dual`
+   Glass cards 3-up — compartido por "Modelo de negocio" (Figma 137:100)
+   y "Para qué" (Figma 194:61). Revisión 2026-05.
    --------------------------------------------------------------------------
-   Layout = row idéntico al Figma 159:318:
-     · Container: flex gap-156 items-start p-128 (heredado de .intro-dual)
-     · Título: Host Grotesk 120px tracking -4.8px line-0.8 nowrap (izq)
-     · Body: flex flex-[1_0_0] flex-col items-start min-w-px (dcha)
-       3 items SIN gap entre ellos — el padding interno (py-24) crea el
-       espaciado vertical visible. Cada item es column gap-12 con
-       eyebrow IBM Plex Mono 14px @ rgba(255,255,255,0.3) arriba y body
-       Mona Sans 24px tracking -0.72px line-1.4 debajo.
-   En móvil colapsa a column única vía la regla mobile de .intro-dual. */
-.solucion-list {
-  gap: 0;
-}
+   Antes "Modelo de negocio" usaba `.kk-rule-block-lg` (border-y +
+   separadores verticales, body 24px centrado). El rediseño actual lo
+   convierte en 3 cards independientes con fondo white-5 alpha (glass),
+   rounded-24 y padding 32px. Dentro de cada card el eyebrow IBM Plex
+   Mono uppercase 16px @ 30% alpha está anclado arriba y el body Mona
+   Sans 18px tracking -0.54px al final, separados por
+   `justify-content: space-between` para que la base de los bodies
+   quede alineada visualmente entre cards aunque tengan distintas
+   longitudes de texto.
 
-.solucion-item {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 24px 32px;
-  align-items: flex-start;
-}
+   "Para qué" se rediseñó en paralelo con el MISMO layout: ambas
+   secciones comparten las clases `.motor-cards` / `.motor-card-g` /
+   `.motor-card-g-eyebrow` / `.motor-card-g-body`. El prefijo `motor-`
+   se queda por nomenclatura histórica.
 
-.solucion-item-body {
-  margin: 0;
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: clamp(18px, 1.8vw, 24px);
-  line-height: 1.4;
-  letter-spacing: -0.03em;
-  color: var(--ink);
-  font-feature-settings: 'ordn' 1, 'ss01' 1, 'ss02' 1, 'ss03' 1, 'ss04' 1,
-    'ss05' 1, 'dlig' 1;
-}
-
-@media (max-width: 900px) {
-  .solucion-item {
-    padding: 16px 0;
-  }
-  .solucion-item-body {
-    font-size: clamp(18px, 4.6vw, 22px);
-  }
-}
-
-/* ==========================================================================
-   Motor de escala — variante `.kk-rule-block-lg` (Figma 137:100)
-   --------------------------------------------------------------------------
-   Misma estructura que `.kk-rule-block` pero con padding vertical más
-   generoso (py-64) y body 24px (vs 18px del problema). Comparte el
-   border-top/bottom y los separadores verticales del rule-block original.
-*/
+   Las clases `.kk-rule-block-lg` y `.motor-cell-body` se quedan en el
+   CSS por si otra sección las reutiliza, pero el JSX ya no las
+   consume — sólo se ven en este bloque por referencia histórica. */
 .kk-rule-block-lg .kk-rule-cell {
   padding: clamp(48px, 6vw, 64px) clamp(20px, 2.4vw, 32px);
   gap: 24px;
@@ -3578,15 +3604,151 @@ body.is-grabbing .vacio-pill {
   }
 }
 
+/* Grid de 3 glass cards en desktop. `align-items: stretch` + flex-1
+   garantiza altura uniforme; `min-height` aporta presencia visual
+   coherente con el alto del Figma (414px) en pantallas anchas y se
+   contrae proporcionalmente en intermedios. */
+.motor-cards {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.motor-card-g {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: clamp(64px, 12vw, 160px);
+  padding: 32px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  /* Altura fija 350px (Figma 137:100 / 194:61 — revisión 2026-05).
+     Antes era clamp(340-414px); ambas secciones (Modelo de negocio +
+     Para qué) bajaron a h-[350px] para una densidad más compacta. */
+  height: clamp(300px, 28vw, 350px);
+}
+
+/* Eyebrow del card: en este módulo el mono va a 16px (no a los 14px
+   del .kk-eyebrow base) y con un alpha 0.3 sobre blanco. En tema
+   claro invertimos el alpha al ink negro con el mismo 0.3 para
+   mantener el contraste suave.
+
+   `align-self: flex-start` ancla el eyebrow al borde izquierdo del
+   card. Sin él, en mobile (donde el contenedor es `.mobile-card` con
+   `align-items: stretch` por defecto) el span `inline-flex` se
+   estiraba al ancho de la card y su `justify-content: center`
+   interno acababa centrando el texto. En desktop el padre
+   `.motor-card-g` ya impone `align-items: flex-start`, así que esta
+   regla no cambia nada visualmente allí — sólo arregla mobile. */
+.motor-card-g-eyebrow {
+  align-self: flex-start;
+  font-size: 16px;
+  letter-spacing: 0;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+:root[data-theme='light'] .motor-card-g-eyebrow {
+  color: rgba(11, 11, 11, 0.4);
+}
+
+.motor-card-g-body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: clamp(16px, 1.4vw, 18px);
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  font-feature-settings: 'ordn' 1, 'ss01' 1, 'ss02' 1, 'ss03' 1, 'ss04' 1,
+    'ss05' 1, 'dlig' 1;
+}
+
+/* Título "Modelo / de negocio" a 2 líneas alineado a la IZQUIERDA
+   (Figma 137:100, revisión 2026-05 · antes estaba centrado). Cada
+   line span lleva whitespace-nowrap para preservar el wrap exacto
+   del Figma; en móvil dejamos que wrappee naturalmente. */
+.motor-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.motor-title-line {
+  display: block;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .motor-title-line {
+    white-space: normal;
+  }
+}
+
+/* Stack vertical de la sección Modelo de negocio. Figma pide
+   `gap-[90px]` entre el header (título) y la fila de cards — un valor
+   intermedio entre los `kk-stack-64` (40-64px) y `kk-stack-128`
+   (56-128px) existentes. Mantengo la escala con clamp para que se
+   contraiga ordenadamente en viewports estrechos. */
+.motor-stack {
+  gap: clamp(48px, 7vw, 90px);
+}
+
+@media (max-width: 720px) {
+  .motor-stack {
+    gap: clamp(40px, 8vw, 64px);
+  }
+}
+
+/* En el tema claro Cande también usa el mismo glass — sólo invertimos
+   el alpha de fondo para que la card se vea sobre el ink claro. */
+:root[data-theme='light'] .motor-card-g {
+  background: rgba(11, 11, 11, 0.05);
+}
+
 /* ==========================================================================
-   Nuestra ventaja — versión rows con HR (Figma 151:131)
+   Nuestra ventaja & Solución disruptiva — patrón "rows con HR"
+   (Figma 137:132 Ventaja · Figma 159:318 Solución)
    --------------------------------------------------------------------------
-   Título grande a la izquierda + filas con divider horizontal: cada
-   fila tiene título-izquierda (Host Medium 24px) + body-derecha
-   (Mona Sans 20px text-right ancho 400). */
+   Ambas secciones comparten exactamente el mismo layout de filas:
+   Header arriba (kk-title-xl a 1 o 2 líneas) + lista de filas con HR
+   entre cada una. Cada fila tiene una columna izquierda fija de 300px
+   (Host Medium 24px, tracking -0.48px) y una columna derecha flex que
+   se expande al ancho restante (Mona Sans 20px tracking -0.6px, line
+   1.4, alineado a la izquierda). El gap entre columnas es de 128px en
+   desktop y se contrae con un clamp para anchos intermedios.
+
+   En la revisión actual el cuerpo dejó de estar alineado a la derecha
+   y de tener ancho fijo de 400px — ahora ocupa flex-1 y va a la
+   izquierda, lo que da bodies más largos de 2 líneas que respiran
+   mejor sin romper la jerarquía con la columna del título. */
 .ventaja-title {
   width: 672px;
   max-width: 100%;
+}
+
+/* Solución disruptiva — título display Host 120px a 2 líneas (Figma
+   159:319). Whitespace-nowrap fuerza el wrap solo cuando se renderizan
+   las dos líneas como spans separados (como hacemos en el componente),
+   no por el flujo del texto. */
+.solucion-title {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.solucion-title-line {
+  display: block;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .solucion-title-line {
+    white-space: normal;
+  }
 }
 
 .ventaja-rows {
@@ -3599,15 +3761,14 @@ body.is-grabbing .vacio-pill {
 .ventaja-row {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 32px;
+  gap: clamp(40px, 10vw, 128px);
   width: 100%;
   color: var(--ink);
 }
 
 .ventaja-row-title {
   flex-shrink: 0;
-  width: 200px;
+  width: 300px;
   font-family: var(--font-display);
   font-weight: 500;
   font-size: clamp(20px, 1.8vw, 24px);
@@ -3618,16 +3779,17 @@ body.is-grabbing .vacio-pill {
 }
 
 .ventaja-row-body {
-  width: 400px;
-  max-width: 100%;
-  text-align: right;
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: left;
   font-family: var(--font-body);
   font-weight: 400;
-  font-size: clamp(17px, 1.5vw, 20px);
+  font-size: clamp(17px, 1.6vw, 20px);
   line-height: 1.4;
   letter-spacing: -0.03em;
   color: var(--ink);
-  font-feature-settings: 'ordn' 1, 'ss01' 1, 'dlig' 1;
+  font-feature-settings: 'ordn' 1, 'ss01' 1, 'ss02' 1, 'ss03' 1, 'ss04' 1,
+    'ss05' 1, 'dlig' 1;
 }
 
 .ventaja-rule {
@@ -3651,8 +3813,81 @@ body.is-grabbing .vacio-pill {
   }
   .ventaja-row-body {
     width: 100%;
-    text-align: left;
     font-size: 17px;
+  }
+}
+
+/* ==========================================================================
+   "Por qué no está resuelto" (Figma 194:2 desktop · 194:96 mobile)
+   --------------------------------------------------------------------------
+   Módulo de la /modelo. Estructura: kk-stack-128 (gap 128px) con header
+   (título display) + bloque de cuerpo (body Mona Sans 24px + cierre
+   Instrument Serif italic). El título reusa .kk-title-xl pero con un
+   max-width de 696px que fuerza el wrap a 2 líneas ("Por qué no / está
+   resuelto") tal y como aparece en Figma — sin ese tope, en pantallas
+   muy anchas iría todo a una sola línea. P1 bajó de 28px a 24px en
+   la revisión 2026-05.
+   ========================================================================== */
+.resuelto-title {
+  width: 696px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.resuelto-title-line {
+  display: block;
+}
+
+.resuelto-body {
+  display: flex;
+  flex-direction: column;
+  /* En desktop hay una línea vacía entre el cuerpo y el cierre italic
+     (Figma reserva una <p> vacía a 24px line 1.5 ≈ 36px). Aquí lo
+     replicamos con un gap explícito que escala suavemente. */
+  gap: clamp(20px, 2.5vw, 36px);
+  width: 100%;
+}
+
+.resuelto-body-block {
+  display: flex;
+  flex-direction: column;
+  /* Las frases del bloque van como líneas independientes (mb-0 en
+     Figma) — el gap simula el line-height 1.4 entre ellas. */
+  gap: 0;
+}
+
+.resuelto-body-line {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: clamp(20px, 2vw, 24px);
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  font-feature-settings: 'ordn' 1, 'ss01' 1, 'ss02' 1, 'ss03' 1, 'ss04' 1,
+    'ss05' 1, 'dlig' 1;
+}
+
+.resuelto-body-italic .resuelto-body-line {
+  font-family: var(--font-serif);
+  font-style: italic;
+  letter-spacing: -0.03em;
+  font-feature-settings: 'ordn' 1;
+}
+
+/* Móvil (≤900px): título a 100% del contenedor (la regla global de
+   .kk-title-xl ya baja el font-size a 60px en ≤720px). En móvil el
+   bloque de cuerpo se compacta — las 3 frases "Porque…" se fusionan
+   visualmente en un único párrafo gracias a que Figma las une con
+   espacio en mobile (194:96). Lo emulamos cerrando el gap entre
+   líneas a 0 y respetando el line-height del párrafo. */
+@media (max-width: 900px) {
+  .resuelto-title {
+    width: 100%;
+  }
+  .resuelto-body {
+    gap: clamp(18px, 4vw, 24px);
   }
 }
 
@@ -3676,12 +3911,11 @@ body.is-grabbing .vacio-pill {
    editorial. Cubre:
      - inner-lead (hero interno)
      - intro-dual-para (Qué es, MVP)
-     - solucion-item-body (Solución)
      - motor-cell-body / motor-card-m-body (Modelo de negocio)
      - vacio-display-body (Situación actual)
-     - ventaja-row-body (Nuestra ventaja)
+     - ventaja-row-body (Nuestra ventaja & Solución disruptiva)
      - sobre-body / sobre-body-m (tabs body desktop + acordeón mobile)
-     - kk-body / kk-body-italic (Problema / Gap / Solución / Motor desktop)
+     - kk-body / kk-body-italic (Problema / Gap / Motor desktop)
      - page-hero-lead (sub-páginas)
 
    Excepciones que NO bajan a 16px (siguen jerarquía):
@@ -3708,7 +3942,6 @@ body.is-grabbing .vacio-pill {
      mantener -0.03em (-0.48px sobre 16px). */
   .inner-lead,
   .intro-dual-para,
-  .solucion-item-body,
   .motor-cell-body,
   .motor-card-m-body,
   .vacio-display-body,
@@ -3717,6 +3950,7 @@ body.is-grabbing .vacio-pill {
   .sobre-body-m,
   .kk-body,
   .kk-body-italic,
+  .resuelto-body-line,
   .page-hero-lead {
     font-size: 16px;
     line-height: 1.5;
@@ -3730,12 +3964,3 @@ body.is-grabbing .vacio-pill {
   }
 }
 
-/* Apilamos también el header de Solución (título + lista) en móvil — el
-   patrón intro-dual ya colapsa a columna en ≤900px, pero la lista interna
-   pierde el padding lateral y los ítems quedan pegados al borde, lo que
-   en móvil queda mejor que el px-32 desktop. */
-@media (max-width: 900px) {
-  .solucion-list {
-    gap: 24px;
-  }
-}

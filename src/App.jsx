@@ -42,12 +42,14 @@ const SECTION_ITEMS_BY_ROUTE = {
   ],
   '/modelo': [
     { id: 'vacio', label: 'Vacío de mercado', icon: Globe },
+    { id: 'resuelto', label: 'Por qué no resuelto', icon: SealQuestion },
     { id: 'solucion', label: 'Solución', icon: Star },
     { id: 'motor', label: 'Motor de escala', icon: Lifebuoy },
     { id: 'ventaja', label: 'Ventaja', icon: Trophy },
   ],
   '/mvp': [
     { id: 'mvp-intro', label: 'MVP', icon: Cube },
+    { id: 'para-que', label: 'Para qué', icon: Lifebuoy },
     { id: 'caja', label: 'Proyección', icon: Receipt },
     { id: 'roadmap', label: 'Roadmap', icon: Path },
   ],
